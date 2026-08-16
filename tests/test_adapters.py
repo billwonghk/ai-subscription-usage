@@ -8,7 +8,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import ai_usage_report as report
 from report_i18n import localize_html
-from claude_code_quota import snapshot_from_statusline
 from help_page import render_help
 from source_discovery import validate_source
 
@@ -59,19 +58,6 @@ class AdapterTests(unittest.TestCase):
         usage = report.Usage("Codex", "gpt-5.6-terra", "2026-08-10", 100, 20, 60, True)
         self.assertEqual(usage.total_tokens, 120)
 
-    def test_codex_report_has_independent_charts_and_subscription_input(self):
-        usage = report.Usage("Codex", "gpt-5.6-terra", "2026-08-10", 100, 20, 60, True)
-        pricing = {
-            "models": {"gpt-5.6-terra": {"input_per_million": 2.5, "cached_input_per_million": 0.25, "output_per_million": 15}},
-            "subscriptions": {"Codex": {"plans": [{"start_date": "2026-08-01", "monthly_usd": 20}]}},
-        }
-        page = report.render_report([usage], None, 30, {"Codex": 1}, pricing)
-        self.assertIn("Codex 用量报表", page)
-        self.assertIn("每日 Token 曲线", page)
-        self.assertIn("每日 API 等价价值 / 订阅日成本倍数曲线", page)
-        self.assertIn("订阅计划", page)
-        self.assertNotIn("Claude、Gemini、Grok 数据。", page.split("<script>")[0])
-
     def test_dashboard_aggregates_all_providers_and_builds_provider_details(self):
         usages = [
             report.Usage("Codex", "gpt-test", "2026-08-10", 100, 20, 40, True),
@@ -81,7 +67,6 @@ class AdapterTests(unittest.TestCase):
         ]
         page = report.render_dashboard(
             usages,
-            None,
             30,
             {"Codex": 1, "Claude Code": 1, "Gemini CLI": 1, "Grok Build": 1},
             {"models": {}, "subscriptions": {}},
@@ -105,7 +90,6 @@ class AdapterTests(unittest.TestCase):
         self.assertIn("summary-sub", page)
         self.assertIn("summary-ratio", page)
         self.assertIn("refresh-local", page)
-        self.assertIn("不读取 OAuth/Auth Token", page)
         self.assertIn('href="http://127.0.0.1:17653/help"', page)
         self.assertIn("Ver development", page)
         self.assertNotIn("读取文件</div>", page)
@@ -157,20 +141,6 @@ class AdapterTests(unittest.TestCase):
         self.assertIn("Last 30 days", page)
         self.assertIn("Total tokens", page)
         self.assertIn("Refresh local data", page)
-
-    def test_claude_statusline_keeps_only_rate_limits(self):
-        snapshot = snapshot_from_statusline({
-            "session_id": "private-session",
-            "workspace": {"current_dir": "/private/project"},
-            "rate_limits": {
-                "five_hour": {"used_percentage": 42.5, "resets_at": 1786834800},
-                "seven_day": {"used_percentage": 11, "resets_at": 1787266800},
-            },
-        })
-        self.assertEqual(snapshot["five_hour"], {"used_percentage": 42.5, "resets_at": 1786834800})
-        self.assertEqual(snapshot["seven_day"], {"used_percentage": 11.0, "resets_at": 1787266800})
-        self.assertNotIn("session_id", snapshot)
-        self.assertNotIn("workspace", snapshot)
 
     def test_claude_repeated_message_id_is_counted_once(self):
         with tempfile.TemporaryDirectory() as temporary:

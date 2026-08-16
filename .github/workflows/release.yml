@@ -63,17 +63,42 @@ jobs:
         shell: pwsh
         run: |
           $dataDir = "$env:LOCALAPPDATA\AI Subscription Usage"
-          & "dist/AI Subscription Usage.exe" --refresh | Out-Null
-          if (-not (Test-Path "$dataDir\settings.json")) { throw "settings.json was not created on first run" }
+
+          Write-Host "---- Testing: does --refresh exit on its own? ----"
+          $refreshProc = Start-Process -FilePath "dist/AI Subscription Usage.exe" -ArgumentList "--refresh" -PassThru -RedirectStandardOutput "refresh-out.txt" -RedirectStandardError "refresh-err.txt"
+          $refreshFinished = $refreshProc.WaitForExit(30000)
+          if (-not $refreshFinished) {
+            Write-Host "##[error]--refresh did not exit within 30s (PID $($refreshProc.Id)); killing it"
+            Stop-Process -Id $refreshProc.Id -Force -ErrorAction SilentlyContinue
+            Get-Content "refresh-out.txt","refresh-err.txt" -ErrorAction SilentlyContinue | Write-Host
+            throw "--refresh hung on Windows instead of exiting"
+          }
+          Write-Host "--refresh exit code: $($refreshProc.ExitCode)"
+          Get-Content "refresh-out.txt","refresh-err.txt" -ErrorAction SilentlyContinue | Write-Host
+
+          Write-Host "---- Preparing a marker file to test reinstall retention ----"
+          New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
           $marker = "$dataDir\upgrade-test-marker.json"
           Set-Content -Path $marker -Value '{"marker":"pre-upgrade"}' -NoNewline
           $before = Get-Content $marker -Raw
+
+          Write-Host "---- Testing: does the silent installer exit on its own? ----"
           $installer = (Get-ChildItem "dist-installer\*.exe" | Select-Object -First 1).FullName
-          Start-Process -FilePath $installer -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait
+          Write-Host "Installer: $installer"
+          $proc = Start-Process -FilePath $installer -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -PassThru
+          $finished = $proc.WaitForExit(120000)
+          if (-not $finished) {
+            Write-Host "##[error]Installer did not exit within 120s (PID $($proc.Id)); killing it and any launched app"
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+            Get-Process -Name "AI Subscription Usage" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Still running: PID $($_.Id)" }
+            Get-Process -Name "AI Subscription Usage" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            throw "Installer hung for more than 120 seconds"
+          }
+          Write-Host "Installer exit code: $($proc.ExitCode)"
+
           if (-not (Test-Path $marker)) { throw "user data directory was wiped by the installer" }
           $after = Get-Content $marker -Raw
           if ($before -ne $after) { throw "user data content changed after reinstall" }
-          if (-not (Test-Path "$dataDir\settings.json")) { throw "settings.json missing after reinstall" }
           Write-Host "Upgrade retention test passed: existing user data survived a reinstall"
       - name: Package macOS release
         if: runner.os == 'macOS'

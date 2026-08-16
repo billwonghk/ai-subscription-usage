@@ -121,9 +121,9 @@ class DesktopApp:
     def refresh(self) -> list[str]:
         try:
             pricing = load_runtime_pricing()
-            usages, snapshot, source_files = ai_usage_report.collect_usages(30)
+            usages, source_files = ai_usage_report.collect_usages(30)
             REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-            base_report = ai_usage_report.render_dashboard(usages, snapshot, 30, source_files, pricing, app_version=APP_VERSION)
+            base_report = ai_usage_report.render_dashboard(usages, 30, source_files, pricing, app_version=APP_VERSION)
             BASE_REPORT_PATH.write_text(base_report, encoding="utf-8")
             REPORT_PATH.write_text(localize_html(base_report, self.settings["language"]), encoding="utf-8")
             write_help(HELP_PATH, self.settings["language"], APP_VERSION)

@@ -40,7 +40,7 @@ def initialize_user_data(resource_root: Path) -> Path:
     legacy = legacy_data_root()
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     backup_root = root / "backups" / f"migration-{stamp}"
-    for name in ("settings.json", "sources.json", "pricing.json", "pending-diagnostic.json", "claude-code-quota.json"):
+    for name in ("settings.json", "sources.json", "pricing.json", "pending-diagnostic.json"):
         source, destination = legacy / name, root / name
         if source.exists() and not destination.exists() and source.resolve() != destination.resolve():
             shutil.copy2(source, destination)

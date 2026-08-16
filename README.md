@@ -8,13 +8,13 @@ GitHub 通用发布包不包含订阅计划、Current detection、本机绝对�
 
 macOS 版本运行在顶部菜单栏。Windows 版本运行在右下角系统托盘，由 GitHub Actions 的 Windows Runner 构建 `AI Subscription Usage.exe` 和 Inno Setup 安装程序。
 
-报表顶部展示总 Token、输入 Token、输出 Token、API 等价价值、有效订阅成本和价值倍数。页面还提供四个平台的每日 Token、每日价值倍数、额度快照、模型明细和未计价 Token。月订阅按 30 天、年订阅按 360 天分摊，计划生效日前不计算订阅成本。
+报表顶部展示总 Token、输入 Token、输出 Token、API 等价价值、有效订阅成本和价值倍数。页面还提供四个平台的每日 Token、每日价值倍数、模型明细和未计价 Token。月订阅按 30 天、年订阅按 360 天分摊，计划生效日前不计算订阅成本。
 
 ## 数据来源
 
 | 平台 | 本机目录 | 数据口径 |
 | --- | --- | --- |
-| ChatGPT | `~/.codex/sessions/` | 内部 Codex JSONL；输入、输出、缓存输入和额度快照 |
+| ChatGPT | `~/.codex/sessions/` | 内部 Codex JSONL；输入、输出和缓存输入 |
 | Claude Code | `~/.claude/projects/` | 输入、输出、缓存读取和缓存写入 |
 | Claude Desktop | `~/Library/Application Support/Claude/local-agent-mode-sessions/` | 检测桌面会话；Token 使用量通过共享 Claude JSONL 汇总 |
 | Gemini CLI | `~/.gemini/tmp/*/chats/` | 输入、输出、思考和缓存 Token |

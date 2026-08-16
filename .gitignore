@@ -1,0 +1,13 @@
+build/
+dist/
+outputs/
+output/
+desktop-app.log
+src/__pycache__/
+tests/__pycache__/
+*.pyc
+.venv-desktop/
+.pyinstaller-cache/
+.DS_Store
+deploy/
+scripts/cloud_deploy.sh

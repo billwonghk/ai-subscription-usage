@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "provider": "chatgpt",
+      "surface": "chatgpt-desktop",
+      "format": "codex-jsonl",
+      "path": "~/.codex/sessions",
+      "read_only": true
+    },
+    {
+      "provider": "claude",
+      "surface": "claude-code",
+      "format": "claude-jsonl",
+      "path": "~/.claude/projects",
+      "read_only": true
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "price_version": "2026-08-15.1",
+  "pricing_url": "https://raw.githubusercontent.com/OWNER/REPOSITORY/main/config/pricing.json",
+  "sha256": "REPLACE_WITH_SHA256_OF_PRICING_JSON"
+}
+

@@ -1,0 +1,6 @@
+{
+  "price_manifest_url": "https://raw.githubusercontent.com/OWNER/REPOSITORY/main/pricing-manifest.json",
+  "releases_url": "https://api.github.com/repos/OWNER/REPOSITORY/releases/latest",
+  "telemetry_endpoint": "https://YOUR-AI-CREW-ENDPOINT.example/diagnostics"
+}
+

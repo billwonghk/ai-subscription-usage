@@ -1,0 +1,31 @@
+{
+  "currency": "USD",
+  "sources": {
+    "OpenAI GPT-5.6 / GPT-5.5": "https://developers.openai.com/api/docs/models/compare",
+    "Anthropic pricing list 2026-05-27": "https://www-cdn.anthropic.com/files/4zrzovbb/website/3684c2faafb97418665782cea0001f439f74b1d2.pdf",
+    "Anthropic Sonnet 4.6": "https://www.anthropic.com/news/claude-sonnet-4-6",
+    "Anthropic current model pricing": "https://platform.claude.com/docs/en/about-claude/pricing"
+  },
+  "schema_version": 2,
+  "price_version": "2026-08-15.1",
+  "updated_at": "2026-08-15T00:00:00-04:00",
+  "models": {
+    "gpt-5.6-sol": {"input_per_million": 5.0, "cached_input_per_million": 0.5, "output_per_million": 30.0},
+    "gpt-5.6-terra": {"input_per_million": 2.5, "cached_input_per_million": 0.25, "output_per_million": 15.0},
+    "gpt-5.6-luna": {"input_per_million": 1.0, "cached_input_per_million": 0.1, "output_per_million": 6.0},
+    "gpt-5.5": {"input_per_million": 5.0, "cached_input_per_million": 0.5, "output_per_million": 30.0},
+    "claude-opus-4-8": {"input_per_million": 5.0, "cached_input_per_million": 0.5, "cache_write_input_per_million": 6.25, "output_per_million": 25.0, "effective_from": "2026-05-27"},
+    "claude-sonnet-4-6": {"input_per_million": 3.0, "cached_input_per_million": 0.3, "cache_write_input_per_million": 3.75, "output_per_million": 15.0, "effective_from": "2026-02-17"},
+    "claude-sonnet-5": {"periods": [
+      {"start_date": "2026-06-30", "end_date": "2026-08-31", "input_per_million": 2.0, "cached_input_per_million": 0.2, "cache_write_input_per_million": 2.5, "output_per_million": 10.0},
+      {"start_date": "2026-09-01", "input_per_million": 3.0, "cached_input_per_million": 0.3, "cache_write_input_per_million": 3.75, "output_per_million": 15.0}
+    ]},
+    "claude-fable-5": {"input_per_million": 10.0, "cached_input_per_million": 1.0, "cache_write_input_per_million": 12.5, "output_per_million": 50.0, "effective_from": "2026-06-09"}
+  },
+  "notes": [
+    "Only models with a public, verified API price are listed.",
+    "Models absent from this file are shown as unpriced; the report does not substitute another model price.",
+    "Tool-call charges, long-context surcharges, regional charges, and cache-write charges are not recoverable from the current local Codex ledger and are excluded.",
+    "Subscription plans are stored separately in each user's application data directory and are never bundled in a public release."
+  ]
+}

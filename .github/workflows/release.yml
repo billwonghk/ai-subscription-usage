@@ -1,0 +1,78 @@
+name: Build desktop release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python scripts/privacy_check.py
+      - run: python -m unittest discover -s tests -v
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        os: [macos-14, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements-desktop.txt
+      - run: pyinstaller --clean --noconfirm ai-subscription-usage.spec
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path src\desktop_app.py -Pattern 'APP_VERSION = "([^"]+)"').Matches.Groups[1].Value
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$version" installer\windows.iss
+      - name: Verify bundled application
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            "dist/AI Subscription Usage.exe" --self-test
+          else
+            "dist/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage" --self-test
+          fi
+      - name: Package macOS release
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p release-assets
+          ditto -c -k --sequesterRsrc --keepParent "dist/AI Subscription Usage.app" "release-assets/AI-Subscription-Usage-macOS.zip"
+      - name: Package Windows release
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release-assets | Out-Null
+          Compress-Archive -Path "dist\AI Subscription Usage.exe" -DestinationPath "release-assets\AI-Subscription-Usage-Windows-Portable.zip"
+          Copy-Item "dist-installer\*.exe" release-assets
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-subscription-usage-${{ runner.os }}
+          path: release-assets/*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+      - run: sha256sum release/* > release/SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/*

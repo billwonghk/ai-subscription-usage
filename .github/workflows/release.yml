@@ -46,6 +46,33 @@ jobs:
           else
             "dist/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage" --self-test
           fi
+      - name: Windows diagnostics
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $doctor = & "dist/AI Subscription Usage.exe" --doctor
+          $doctor | Out-Host
+          $doctor | python -c "import json,sys; json.load(sys.stdin)"
+          $sources = & "dist/AI Subscription Usage.exe" --verify-sources
+          $sources | Out-Host
+          $sources | python -c "import json,sys; json.load(sys.stdin)"
+      - name: Windows upgrade-retention test
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $dataDir = "$env:LOCALAPPDATA\AI Subscription Usage"
+          & "dist/AI Subscription Usage.exe" --refresh | Out-Null
+          if (-not (Test-Path "$dataDir\settings.json")) { throw "settings.json was not created on first run" }
+          $marker = "$dataDir\upgrade-test-marker.json"
+          Set-Content -Path $marker -Value '{"marker":"pre-upgrade"}' -NoNewline
+          $before = Get-Content $marker -Raw
+          $installer = (Get-ChildItem "dist-installer\*.exe" | Select-Object -First 1).FullName
+          Start-Process -FilePath $installer -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait
+          if (-not (Test-Path $marker)) { throw "user data directory was wiped by the installer" }
+          $after = Get-Content $marker -Raw
+          if ($before -ne $after) { throw "user data content changed after reinstall" }
+          if (-not (Test-Path "$dataDir\settings.json")) { throw "settings.json missing after reinstall" }
+          Write-Host "Upgrade retention test passed: existing user data survived a reinstall"
       - name: Package macOS release
         if: runner.os == 'macOS'
         run: |

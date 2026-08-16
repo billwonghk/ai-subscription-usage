@@ -50,12 +50,14 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $doctor = & "dist/AI Subscription Usage.exe" --doctor
-          $doctor | Out-Host
-          $doctor | python -c "import json,sys; json.load(sys.stdin)"
-          $sources = & "dist/AI Subscription Usage.exe" --verify-sources
-          $sources | Out-Host
-          $sources | python -c "import json,sys; json.load(sys.stdin)"
+          $doctor = & "dist/AI Subscription Usage.exe" --doctor 2>&1 | Out-String
+          Write-Host "---- --doctor exit code: $LASTEXITCODE ----"
+          Write-Host $doctor
+          $doctor | ConvertFrom-Json | Out-Null
+          $sources = & "dist/AI Subscription Usage.exe" --verify-sources 2>&1 | Out-String
+          Write-Host "---- --verify-sources exit code: $LASTEXITCODE ----"
+          Write-Host $sources
+          $sources | ConvertFrom-Json | Out-Null
       - name: Windows upgrade-retention test
         if: runner.os == 'Windows'
         shell: pwsh

@@ -14,6 +14,7 @@ EN = {
     "open_data_folder": "Open data folder",
     "clear_diagnostics": "Clear diagnostic records",
     "diagnostics_cleared": "Diagnostic records cleared",
+    "report_issue": "Report an issue",
     "hours_suffix": "hours",
     "on": "On",
     "off": "Off",
@@ -22,16 +23,17 @@ EN = {
 
 TEXT = {
     "en": EN,
-    "zh-CN": {**EN, "title": "AI 订阅用量：设置", "language": "语言", "autostart": "开机自动启动", "telemetry": "发送匿名诊断", "refresh_interval": "刷新频率", "open_data_folder": "打开数据文件夹", "clear_diagnostics": "清除诊断记录", "diagnostics_cleared": "诊断记录已清除", "hours_suffix": "小时", "on": "已开启", "off": "已关闭", "app_not_running": "本机应用未运行"},
-    "ja": {**EN, "title": "AIサブスクリプション使用量：設定", "language": "言語", "autostart": "ログイン時に起動", "telemetry": "匿名診断を送信", "refresh_interval": "更新間隔", "open_data_folder": "データフォルダを開く", "clear_diagnostics": "診断記録を消去", "diagnostics_cleared": "診断記録を消去しました", "hours_suffix": "時間", "on": "オン", "off": "オフ", "app_not_running": "ローカルアプリが起動していません"},
-    "ko": {**EN, "title": "AI 구독 사용량: 설정", "language": "언어", "autostart": "로그인 시 시작", "telemetry": "익명 진단 전송", "refresh_interval": "새로고침 주기", "open_data_folder": "데이터 폴더 열기", "clear_diagnostics": "진단 기록 지우기", "diagnostics_cleared": "진단 기록이 삭제되었습니다", "hours_suffix": "시간", "on": "켜짐", "off": "꺼짐", "app_not_running": "로컬 앱이 실행 중이 아닙니다"},
-    "fr": {**EN, "title": "Utilisation des abonnements IA : paramètres", "language": "Langue", "autostart": "Lancer à l'ouverture de session", "telemetry": "Envoyer les diagnostics anonymes", "refresh_interval": "Intervalle d'actualisation", "open_data_folder": "Ouvrir le dossier de données", "clear_diagnostics": "Effacer les journaux de diagnostic", "diagnostics_cleared": "Journaux de diagnostic effacés", "hours_suffix": "heures", "on": "Activé", "off": "Désactivé", "app_not_running": "L'application locale ne fonctionne pas"},
-    "de": {**EN, "title": "KI-Abonnementnutzung: Einstellungen", "language": "Sprache", "autostart": "Bei Anmeldung starten", "telemetry": "Anonyme Diagnosen senden", "refresh_interval": "Aktualisierungsintervall", "open_data_folder": "Datenordner öffnen", "clear_diagnostics": "Diagnoseprotokolle löschen", "diagnostics_cleared": "Diagnoseprotokolle gelöscht", "hours_suffix": "Stunden", "on": "Ein", "off": "Aus", "app_not_running": "Lokale App läuft nicht"},
-    "es": {**EN, "title": "Uso de suscripciones de IA: configuración", "language": "Idioma", "autostart": "Iniciar al iniciar sesión", "telemetry": "Enviar diagnósticos anónimos", "refresh_interval": "Intervalo de actualización", "open_data_folder": "Abrir carpeta de datos", "clear_diagnostics": "Borrar registros de diagnóstico", "diagnostics_cleared": "Registros de diagnóstico borrados", "hours_suffix": "horas", "on": "Activado", "off": "Desactivado", "app_not_running": "La aplicación local no está activa"},
+    "zh-CN": {**EN, "title": "AI 订阅用量：设置", "language": "语言", "autostart": "开机自动启动", "telemetry": "发送匿名诊断", "refresh_interval": "刷新频率", "open_data_folder": "打开数据文件夹", "clear_diagnostics": "清除诊断记录", "diagnostics_cleared": "诊断记录已清除", "report_issue": "反馈问题", "hours_suffix": "小时", "on": "已开启", "off": "已关闭", "app_not_running": "本机应用未运行"},
+    "ja": {**EN, "title": "AIサブスクリプション使用量：設定", "language": "言語", "autostart": "ログイン時に起動", "telemetry": "匿名診断を送信", "refresh_interval": "更新間隔", "open_data_folder": "データフォルダを開く", "clear_diagnostics": "診断記録を消去", "diagnostics_cleared": "診断記録を消去しました", "report_issue": "問題を報告", "hours_suffix": "時間", "on": "オン", "off": "オフ", "app_not_running": "ローカルアプリが起動していません"},
+    "ko": {**EN, "title": "AI 구독 사용량: 설정", "language": "언어", "autostart": "로그인 시 시작", "telemetry": "익명 진단 전송", "refresh_interval": "새로고침 주기", "open_data_folder": "데이터 폴더 열기", "clear_diagnostics": "진단 기록 지우기", "diagnostics_cleared": "진단 기록이 삭제되었습니다", "report_issue": "문제 신고", "hours_suffix": "시간", "on": "켜짐", "off": "꺼짐", "app_not_running": "로컬 앱이 실행 중이 아닙니다"},
+    "fr": {**EN, "title": "Utilisation des abonnements IA : paramètres", "language": "Langue", "autostart": "Lancer à l'ouverture de session", "telemetry": "Envoyer les diagnostics anonymes", "refresh_interval": "Intervalle d'actualisation", "open_data_folder": "Ouvrir le dossier de données", "clear_diagnostics": "Effacer les journaux de diagnostic", "diagnostics_cleared": "Journaux de diagnostic effacés", "report_issue": "Signaler un problème", "hours_suffix": "heures", "on": "Activé", "off": "Désactivé", "app_not_running": "L'application locale ne fonctionne pas"},
+    "de": {**EN, "title": "KI-Abonnementnutzung: Einstellungen", "language": "Sprache", "autostart": "Bei Anmeldung starten", "telemetry": "Anonyme Diagnosen senden", "refresh_interval": "Aktualisierungsintervall", "open_data_folder": "Datenordner öffnen", "clear_diagnostics": "Diagnoseprotokolle löschen", "diagnostics_cleared": "Diagnoseprotokolle gelöscht", "report_issue": "Problem melden", "hours_suffix": "Stunden", "on": "Ein", "off": "Aus", "app_not_running": "Lokale App läuft nicht"},
+    "es": {**EN, "title": "Uso de suscripciones de IA: configuración", "language": "Idioma", "autostart": "Iniciar al iniciar sesión", "telemetry": "Enviar diagnósticos anónimos", "refresh_interval": "Intervalo de actualización", "open_data_folder": "Abrir carpeta de datos", "clear_diagnostics": "Borrar registros de diagnóstico", "diagnostics_cleared": "Registros de diagnóstico borrados", "report_issue": "Informar un problema", "hours_suffix": "horas", "on": "Activado", "off": "Desactivado", "app_not_running": "La aplicación local no está activa"},
 }
 
 LANGUAGE_NAMES = {"zh-CN": "中文", "en": "English", "ja": "日本語", "ko": "한국어", "fr": "Français", "de": "Deutsch", "es": "Español"}
 REFRESH_HOURS_CHOICES = (6, 12, 24)
+ISSUE_TRACKER_URL = "https://github.com/billwonghk/ai-subscription-usage/issues/new"
 
 
 def render_settings(language: str, current_settings: dict, autostart_enabled: bool, autostart_supported: bool, app_version: str = "development") -> str:
@@ -75,7 +77,7 @@ def render_settings(language: str, current_settings: dict, autostart_enabled: bo
         '.toggle{font:inherit;border:1px solid var(--line);border-radius:9px;padding:8px 16px;background:#0a1322;color:var(--sub);cursor:pointer;min-width:84px}'
         '.toggle.on{background:var(--accent);color:#07101d;border-color:var(--accent);font-weight:650}'
         '.action-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}'
-        'button.action{font:inherit;border:1px solid var(--line);border-radius:9px;padding:9px 16px;background:#0a1322;color:var(--ink);cursor:pointer}'
+        'button.action,a.action{font:inherit;border:1px solid var(--line);border-radius:9px;padding:9px 16px;background:#0a1322;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block}'
         '.status{color:var(--sub);font-size:13px;margin-top:10px;min-height:16px}'
     )
     script = (
@@ -95,5 +97,5 @@ def render_settings(language: str, current_settings: dict, autostart_enabled: bo
 <section><div class="label">{html.escape(t['language'])}</div><div class="chips" style="margin-top:10px">{language_buttons}</div></section>
 <section>{autostart_row}{telemetry_row}</section>
 <section><div class="label">{html.escape(t['refresh_interval'])}</div><div class="chips" style="margin-top:10px">{refresh_buttons}</div></section>
-<section><div class="action-row"><button class="action" id="open-folder">{html.escape(t['open_data_folder'])}</button><button class="action" id="clear-diagnostics">{html.escape(t['clear_diagnostics'])}</button></div><div class="status" id="status"></div></section>
+<section><div class="action-row"><button class="action" id="open-folder">{html.escape(t['open_data_folder'])}</button><button class="action" id="clear-diagnostics">{html.escape(t['clear_diagnostics'])}</button><a class="action" href="{html.escape(ISSUE_TRACKER_URL)}" target="_blank" rel="noopener">{html.escape(t['report_issue'])}</a></div><div class="status" id="status"></div></section>
 </main><script>{script}</script></body></html>'''

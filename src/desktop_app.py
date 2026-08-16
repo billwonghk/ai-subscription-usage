@@ -18,12 +18,17 @@ from pathlib import Path
 import pystray
 from PIL import Image, ImageDraw
 
+if sys.platform == "darwin":
+    from PyObjCTools import AppHelper
+
 import ai_usage_report
+import autostart
 from diagnostics import diagnostic_payload, save_pending, send_diagnostic
 from i18n import SUPPORTED, load_messages, system_language
 from report_i18n import localize_html
 from updater import latest_release, update_pricing
 from help_page import write_help
+from settings_page import REFRESH_HOURS_CHOICES, render_settings
 from source_discovery import configure_source, doctor_report, load_configured_sources
 from runtime_data import app_data_root, initialize_user_data, load_subscriptions, save_subscriptions
 
@@ -39,8 +44,9 @@ SETTINGS_PATH = CONFIG_ROOT / "settings.json"
 SUBSCRIPTIONS_PATH = CONFIG_ROOT / "subscriptions.json"
 PENDING_DIAGNOSTIC = CONFIG_ROOT / "pending-diagnostic.json"
 LOCAL_PORT = 17653
-LANGUAGE_NAMES = {"zh-CN": "中文", "en": "English", "ja": "日本語", "ko": "한국어", "fr": "Français", "de": "Deutsch", "es": "Español"}
+ALLOWED_ORIGINS = {"null", "https://token.report.test.apeai.online", f"http://127.0.0.1:{LOCAL_PORT}"}
 PLAN_PROVIDERS = {"ChatGPT": "Codex", "Claude": "Claude", "Gemini": "Gemini", "Grok": "Grok"}
+SETTINGS_GEAR = "⚙️" if sys.platform == "darwin" else "⚙"
 
 
 def load_settings() -> dict:
@@ -112,6 +118,24 @@ def notify(title: str, message: str) -> None:
         subprocess.run(["powershell", "-NoProfile", "-Command", command], check=False)
 
 
+def _run_on_main_thread(callback) -> None:
+    """Marshal a pystray icon/menu update onto the main thread.
+
+    pystray's macOS backend calls AppKit directly with no thread marshaling
+    of its own (see pystray/_darwin.py: _update_title/_update_menu). That is
+    safe when pystray itself invokes a menu callback, since AppKit delivers
+    those on the main thread, but our settings page triggers changes from
+    the local HTTP server's request-handler thread instead, and mutating
+    NSStatusItem/NSMenu off the main thread crashes the whole process.
+    Windows' pystray backend has not shown the same failure, so it is
+    called directly there.
+    """
+    if sys.platform == "darwin":
+        AppHelper.callAfter(callback)
+    else:
+        callback()
+
+
 class DesktopApp:
     def __init__(self) -> None:
         ensure_runtime_files()
@@ -119,13 +143,19 @@ class DesktopApp:
         self.messages = load_messages(self.settings["language"])
         self.server: ThreadingHTTPServer | None = None
         self.icon: pystray.Icon | None = None
+        self._refresh_timer: threading.Timer | None = None
 
     @staticmethod
     def _icon_image() -> Image.Image:
-        image = Image.new("RGBA", (64, 64), (8, 13, 24, 255))
-        draw = ImageDraw.Draw(image)
-        draw.line((12, 47, 25, 31, 36, 39, 52, 14), fill=(97, 168, 255, 255), width=7, joint="curve")
-        return image
+        asset_name = "tray-icon.ico" if sys.platform == "win32" else "tray-icon-64.png"
+        asset = RESOURCE_ROOT / "assets" / asset_name
+        try:
+            return Image.open(asset).convert("RGBA")
+        except OSError:
+            image = Image.new("RGBA", (64, 64), (8, 13, 24, 255))
+            draw = ImageDraw.Draw(image)
+            draw.line((12, 47, 25, 31, 36, 39, 52, 14), fill=(97, 168, 255, 255), width=7, joint="curve")
+            return image
 
     def refresh(self) -> list[str]:
         try:
@@ -178,18 +208,40 @@ class DesktopApp:
         self.settings["language"] = language
         save_settings(self.settings)
         self.messages = load_messages(language)
-        self.icon.title = self.messages["app_name"]
-        self.icon.menu = self._menu()
-        self.icon.update_menu()
+        if self.icon is not None:
+            _run_on_main_thread(self._refresh_icon_menu)
         if BASE_REPORT_PATH.exists():
             REPORT_PATH.write_text(localize_html(BASE_REPORT_PATH.read_text(encoding="utf-8"), language), encoding="utf-8")
         else:
             self.refresh()
         write_help(HELP_PATH, language, APP_VERSION)
 
+    def _refresh_icon_menu(self) -> None:
+        self.icon.title = self.messages["app_name"]
+        self.icon.menu = self._menu()
+        self.icon.update_menu()
+
     def toggle_telemetry(self) -> None:
         self.settings["telemetry_consent"] = not self.settings["telemetry_consent"]
         save_settings(self.settings)
+
+    def open_data_folder(self) -> None:
+        if sys.platform == "darwin":
+            subprocess.run(["open", str(CONFIG_ROOT)], check=False)
+        elif sys.platform == "win32":
+            os.startfile(str(CONFIG_ROOT))  # noqa: S606
+
+    def set_refresh_interval(self, hours: int) -> None:
+        self.settings["refresh_hours"] = hours
+        save_settings(self.settings)
+        if self._refresh_timer:
+            self._refresh_timer.cancel()
+        self._schedule_refresh()
+
+    def clear_diagnostics(self) -> None:
+        if PENDING_DIAGNOSTIC.exists():
+            PENDING_DIAGNOSTIC.unlink()
+        notify(self.messages["app_name"], self.messages["diagnostics_cleared"])
 
     def open_report(self) -> None:
         if not REPORT_PATH.exists():
@@ -199,6 +251,9 @@ class DesktopApp:
     def open_help(self) -> None:
         write_help(HELP_PATH, self.settings["language"], APP_VERSION)
         webbrowser.open(f"http://127.0.0.1:{LOCAL_PORT}/help")
+
+    def open_settings(self) -> None:
+        webbrowser.open(f"http://127.0.0.1:{LOCAL_PORT}/settings")
 
     def _start_http(self) -> None:
         app = self
@@ -229,6 +284,16 @@ class DesktopApp:
                     self.end_headers()
                     self.wfile.write(body)
                     return
+                if self.path.startswith("/settings"):
+                    body = render_settings(app.settings["language"], app.settings, autostart.is_enabled(), autostart.is_supported(), APP_VERSION).encode()
+                    self.send_response(200)
+                    self._cors()
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Cache-Control", "no-store")
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return
                 if not self.path.startswith("/report") or not REPORT_PATH.exists():
                     self.send_error(404)
                     return
@@ -247,10 +312,10 @@ class DesktopApp:
                 self.end_headers()
 
             def do_POST(self) -> None:
-                if self.path not in {"/refresh", "/plans"}:
+                if self.path not in {"/refresh", "/plans", "/settings"}:
                     self.send_error(404)
                     return
-                if self.headers.get("Origin", "") not in {"null", "https://token.report.test.apeai.online"}:
+                if self.headers.get("Origin", "") not in ALLOWED_ORIGINS:
                     self.send_error(403)
                     return
                 try:
@@ -258,6 +323,24 @@ class DesktopApp:
                         length = min(int(self.headers.get("Content-Length", "0")), 4096)
                         plan = json.loads(self.rfile.read(length))
                         body = json.dumps({"ok": True, "plans": save_subscription_plan(plan)}).encode()
+                    elif self.path == "/settings":
+                        length = min(int(self.headers.get("Content-Length", "0")), 4096)
+                        payload = json.loads(self.rfile.read(length))
+                        action, value = payload.get("action"), payload.get("value")
+                        if action == "set_language" and value in SUPPORTED:
+                            app.set_language(value)
+                        elif action == "set_autostart" and autostart.is_supported():
+                            autostart.set_enabled(bool(value), Path(sys.executable))
+                        elif action == "set_telemetry":
+                            app.settings["telemetry_consent"] = bool(value)
+                            save_settings(app.settings)
+                        elif action == "set_refresh_hours" and value in REFRESH_HOURS_CHOICES:
+                            app.set_refresh_interval(int(value))
+                        elif action == "open_data_folder":
+                            app.open_data_folder()
+                        elif action == "clear_diagnostics":
+                            app.clear_diagnostics()
+                        body = json.dumps({"ok": True}).encode()
                     else:
                         unknown = app.refresh()
                         body = json.dumps({"ok": True, "unpriced_models": unknown}).encode()
@@ -273,8 +356,7 @@ class DesktopApp:
 
             def _cors(self) -> None:
                 origin = self.headers.get("Origin", "")
-                allowed = origin == "null" or origin == "https://token.report.test.apeai.online"
-                if allowed:
+                if origin in ALLOWED_ORIGINS:
                     self.send_header("Access-Control-Allow-Origin", origin)
                 self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
                 self.send_header("Access-Control-Allow-Headers", "Content-Type")
@@ -295,14 +377,19 @@ class DesktopApp:
         timer.daemon = True
         timer.start()
 
+    def _schedule_refresh(self) -> None:
+        def run_again() -> None:
+            try:
+                self.refresh()
+            finally:
+                self._schedule_refresh()
+        hours = int(self.settings.get("refresh_hours", 24))
+        timer = threading.Timer(max(1, hours) * 3600, run_again)
+        timer.daemon = True
+        timer.start()
+        self._refresh_timer = timer
+
     def _menu(self):
-        def language_item(language: str):
-            return pystray.MenuItem(
-                LANGUAGE_NAMES[language],
-                lambda _icon, _item: self.set_language(language),
-                checked=lambda _item: self.settings["language"] == language,
-                radio=True,
-            )
         return pystray.Menu(
             pystray.MenuItem(f"{self.messages['app_name']} Ver {APP_VERSION}", None, enabled=False),
             pystray.Menu.SEPARATOR,
@@ -310,9 +397,8 @@ class DesktopApp:
             pystray.MenuItem(self.messages["refresh_now"], lambda: self.refresh()),
             pystray.MenuItem(self.messages["update_prices"], lambda: self.update_prices()),
             pystray.MenuItem(self.messages["check_app_update"], lambda: self.check_app_update(open_page=True)),
-            pystray.MenuItem(self.messages["language"], pystray.Menu(*[language_item(language) for language in sorted(SUPPORTED)])),
+            pystray.MenuItem(f"{self.messages['settings']} {SETTINGS_GEAR}", lambda: self.open_settings()),
             pystray.MenuItem(self.messages.get("help", "Configuration and user guide"), lambda: self.open_help()),
-            pystray.MenuItem(self.messages["telemetry"], lambda: self.toggle_telemetry(), checked=lambda _item: self.settings["telemetry_consent"]),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(self.messages["quit"], lambda: self.stop()),
         )
@@ -323,8 +409,8 @@ class DesktopApp:
         if not self.settings.get("onboarding_complete"):
             self.settings["onboarding_complete"] = True
             save_settings(self.settings)
-            self.open_help()
-        self._schedule(self.refresh, int(self.settings.get("refresh_hours", 24)))
+            self.open_report()
+        self._schedule_refresh()
         self._schedule(self.check_app_update, int(self.settings.get("update_check_hours", 24)))
         self.icon.menu = self._menu()
         self.icon.run()

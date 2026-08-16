@@ -24,10 +24,6 @@ Source: "..\dist\AI Subscription Usage.exe"; DestDir: "{app}"; Flags: ignorevers
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: startup
-
-[Tasks]
-Name: "startup"; Description: "Start AI Subscription Usage when Windows starts"; Flags: checkedonce
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch AI Subscription Usage"; Flags: nowait postinstall skipifsilent

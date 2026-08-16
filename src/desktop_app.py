@@ -99,7 +99,16 @@ def notify(title: str, message: str) -> None:
     elif sys.platform == "win32":
         safe_title = title.replace("'", "''")
         safe_message = message.replace("'", "''")
-        command = f"Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('{safe_message}','{safe_title}')"
+        command = (
+            "Add-Type -AssemblyName System.Windows.Forms;"
+            "Add-Type -AssemblyName System.Drawing;"
+            "$n=New-Object System.Windows.Forms.NotifyIcon;"
+            "$n.Icon=[System.Drawing.SystemIcons]::Information;"
+            "$n.Visible=$true;"
+            f"$n.ShowBalloonTip(4000,'{safe_title}','{safe_message}',[System.Windows.Forms.ToolTipIcon]::Info);"
+            "Start-Sleep -Milliseconds 4200;"
+            "$n.Dispose()"
+        )
         subprocess.run(["powershell", "-NoProfile", "-Command", command], check=False)
 
 

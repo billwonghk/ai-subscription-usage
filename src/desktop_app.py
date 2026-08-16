@@ -109,7 +109,7 @@ class DesktopApp:
         self.settings = load_settings()
         self.messages = load_messages(self.settings["language"])
         self.server: ThreadingHTTPServer | None = None
-        self.icon = pystray.Icon("ai-subscription-usage", self._icon_image(), self.messages["app_name"])
+        self.icon: pystray.Icon | None = None
 
     @staticmethod
     def _icon_image() -> Image.Image:
@@ -309,6 +309,7 @@ class DesktopApp:
         )
 
     def run(self) -> None:
+        self.icon = pystray.Icon("ai-subscription-usage", self._icon_image(), self.messages["app_name"])
         self._start_http()
         if not self.settings.get("onboarding_complete"):
             self.settings["onboarding_complete"] = True

@@ -30,6 +30,7 @@ HELP_LINKS = {"en": "Configuration and user guide", "ja": "設定・使用ガイ
 EXTRA_TRANSLATIONS = {
     "en": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "Each provider keeps its own plan history. Monthly plans are allocated over 30 days and annual plans over 360 days; subscription cost is excluded before the effective date.",
+        "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "Calculated using whichever subscription price was in effect each day in this period; if your subscription price changed partway through, this blends the old and new rates.",
         "各平台当天输入、输出和缓存口径合并后的 Token。": "Daily Token combines input, output, and cached input for each provider.",
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "Daily API-equivalent value divided by daily subscription cost. No multiple is calculated when a model has no public price or no plan is active.",
         "输入订阅金额": "Enter subscription amount", "不计算订阅成本与倍数": "Subscription cost and multiple are not calculated",
@@ -41,6 +42,7 @@ EXTRA_TRANSLATIONS = {
     },
     "ja": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "サービスごとに個別のプラン履歴を保存します。月額プランは30日、年額プランは360日で日割りし、適用日前の費用は計算しません。",
+        "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "この期間中、実際にその日ごとに有効だったサブスクリプション価格で計算しています。途中で価格が変わった場合、新旧の価格が混ざった結果になります。",
         "各平台当天输入、输出和缓存口径合并后的 Token。": "各サービスの入力、出力、キャッシュ入力を合算した日別Tokenです。",
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "日別API相当額を日別サブスクリプション費用で割った値です。公開価格または有効なプランがない日は倍率を計算しません。",
         "输入订阅金额": "料金を入力", "不计算订阅成本与倍数": "費用と倍率は計算されません", "无生效计划": "有効なプランなし", "模型未计价": "モデル価格なし", "日成本": "日別費用", "（无数据）": "（データなし）", "（估算）": "（推定）", "更新完成，正在打开本机报表": "更新完了、ローカルレポートを開いています",
@@ -48,6 +50,7 @@ EXTRA_TRANSLATIONS = {
     },
     "ko": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "서비스별 요금제 이력을 저장합니다. 월간 요금제는 30일, 연간 요금제는 360일로 배분하며 적용일 전에는 구독 비용을 계산하지 않습니다.",
+        "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "이 기간 동안 매일 실제로 적용된 구독 가격으로 계산합니다. 중간에 구독 가격이 바뀌었다면 신구 가격이 섞인 결과입니다.",
         "各平台当天输入、输出和缓存口径合并后的 Token。": "각 서비스의 입력, 출력, 캐시 입력을 합산한 일별 Token입니다.",
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "일별 API 환산 가치를 일별 구독 비용으로 나눈 값입니다. 공개 가격이나 적용 중인 요금제가 없으면 배수를 계산하지 않습니다.",
         "输入订阅金额": "구독 금액 입력", "不计算订阅成本与倍数": "구독 비용과 배수를 계산하지 않음", "无生效计划": "적용 중인 요금제 없음", "模型未计价": "모델 가격 없음", "日成本": "일별 비용", "（无数据）": "(데이터 없음)", "（估算）": "(추정)", "更新完成，正在打开本机报表": "업데이트 완료, 로컬 보고서를 여는 중",
@@ -55,6 +58,7 @@ EXTRA_TRANSLATIONS = {
     },
     "fr": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "Chaque fournisseur conserve son propre historique. Les abonnements mensuels sont répartis sur 30 jours et les annuels sur 360 jours ; aucun coût n’est calculé avant la date d’effet.",
+        "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "Calculé à partir du tarif d’abonnement réellement en vigueur chaque jour de cette période ; si votre tarif a changé en cours de route, ce montant mélange l’ancien et le nouveau tarif.",
         "各平台当天输入、输出和缓存口径合并后的 Token。": "Les Token quotidiens regroupent les entrées, les sorties et les entrées en cache de chaque fournisseur.",
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "Valeur API quotidienne divisée par le coût quotidien de l’abonnement. Aucun multiple n’est calculé sans tarif public ou abonnement actif.",
         "输入订阅金额": "Saisir le montant", "不计算订阅成本与倍数": "Coût et multiple non calculés", "无生效计划": "Aucun abonnement actif", "模型未计价": "Modèle non tarifé", "日成本": "Coût quotidien", "（无数据）": " (aucune donnée)", "（估算）": " (estimation)", "更新完成，正在打开本机报表": "Mise à jour terminée ; ouverture du rapport local",
@@ -62,6 +66,7 @@ EXTRA_TRANSLATIONS = {
     },
     "de": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "Für jeden Anbieter wird ein eigener Planverlauf gespeichert. Monatspläne werden auf 30 Tage und Jahrespläne auf 360 Tage verteilt; vor dem Gültigkeitsdatum werden keine Kosten berechnet.",
+        "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "Berechnet anhand des Abopreises, der an jedem einzelnen Tag dieses Zeitraums tatsächlich galt; hat sich Ihr Abopreis zwischenzeitlich geändert, vermischt dieser Wert den alten und den neuen Preis.",
         "各平台当天输入、输出和缓存口径合并后的 Token。": "Die täglichen Token umfassen Eingabe, Ausgabe und Cache-Eingabe jedes Anbieters.",
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "Täglicher API-Gegenwert geteilt durch tägliche Abokosten. Ohne öffentlichen Modellpreis oder aktiven Plan wird kein Faktor berechnet.",
         "输入订阅金额": "Abobetrag eingeben", "不计算订阅成本与倍数": "Abokosten und Faktor werden nicht berechnet", "无生效计划": "Kein aktiver Plan", "模型未计价": "Modell ohne Preis", "日成本": "Tageskosten", "（无数据）": " (keine Daten)", "（估算）": " (geschätzt)", "更新完成，正在打开本机报表": "Aktualisierung abgeschlossen; lokaler Bericht wird geöffnet",
@@ -69,6 +74,7 @@ EXTRA_TRANSLATIONS = {
     },
     "es": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "Cada proveedor conserva su propio historial. Los planes mensuales se reparten en 30 días y los anuales en 360 días; no se calcula coste antes de la fecha de vigencia.",
+        "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "Se calcula con el precio de suscripción que estuvo realmente vigente cada día de este periodo; si el precio cambió a mitad de camino, este importe mezcla la tarifa antigua y la nueva.",
         "各平台当天输入、输出和缓存口径合并后的 Token。": "Los Token diarios combinan entrada, salida y entrada en caché de cada proveedor.",
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "Valor API diario dividido por el coste diario de suscripción. No se calcula el múltiplo sin precio público o plan activo.",
         "输入订阅金额": "Introducir importe", "不计算订阅成本与倍数": "No se calculan el coste ni el múltiplo", "无生效计划": "Sin plan activo", "模型未计价": "Modelo sin precio", "日成本": "Coste diario", "（无数据）": " (sin datos)", "（估算）": " (estimado)", "更新完成，正在打开本机报表": "Actualización completa; abriendo el informe local",

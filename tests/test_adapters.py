@@ -54,6 +54,59 @@ class AdapterTests(unittest.TestCase):
         self.assertTrue(usages[0].is_estimate)
         self.assertEqual(usages[0].input_tokens, 5120)
 
+    def test_grok_reasoning_tokens_are_not_double_counted(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "logs" / "unified.jsonl"
+            path.parent.mkdir(parents=True)
+            record = {
+                "ts": "2026-08-10T12:00:00Z",
+                "msg": "shell.turn.inference_done",
+                "model": "grok-4.5",
+                "ctx": {
+                    "prompt_tokens": 349041,
+                    "cached_prompt_tokens": 348160,
+                    "completion_tokens": 2807,
+                    "reasoning_tokens": 2804,
+                },
+            }
+            path.write_text(json.dumps(record) + "\n", encoding="utf-8")
+            usages, files_read = report.parse_grok_build(Path(temporary), self.since)
+        self.assertEqual(files_read, 1)
+        self.assertEqual(len(usages), 1)
+        self.assertEqual(usages[0].output_tokens, 2807)
+        self.assertEqual(usages[0].input_tokens, 349041)
+        self.assertEqual(usages[0].cached_input_tokens, 348160)
+
+    def test_grok_updates_jsonl_is_preferred_over_unified_log(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "logs").mkdir(parents=True)
+            (root / "logs" / "unified.jsonl").write_text(json.dumps({
+                "ts": "2026-08-10T12:00:00Z",
+                "msg": "shell.turn.inference_done",
+                "ctx": {"prompt_tokens": 999, "completion_tokens": 999},
+            }) + "\n", encoding="utf-8")
+            session = root / "sessions" / "cwd" / "session-id"
+            session.mkdir(parents=True)
+            (session / "updates.jsonl").write_text(json.dumps({
+                "sessionUpdate": "turn_completed",
+                "ts": "2026-08-10T12:00:00Z",
+                "usage": {
+                    "inputTokens": 100,
+                    "outputTokens": 20,
+                    "cachedReadTokens": 10,
+                    "reasoningTokens": 18,
+                    "modelUsage": {"grok-4.5": {}},
+                },
+            }) + "\n", encoding="utf-8")
+            usages, files_read = report.parse_grok_build(root, self.since)
+        self.assertEqual(files_read, 1)
+        self.assertEqual(len(usages), 1)
+        self.assertEqual(usages[0].model, "grok-4.5")
+        self.assertEqual(usages[0].input_tokens, 100)
+        self.assertEqual(usages[0].output_tokens, 20)
+        self.assertEqual(usages[0].cached_input_tokens, 10)
+
     def test_codex_cache_is_not_added_twice(self):
         usage = report.Usage("Codex", "gpt-5.6-terra", "2026-08-10", 100, 20, 60, True)
         self.assertEqual(usage.total_tokens, 120)
@@ -78,7 +131,8 @@ class AdapterTests(unittest.TestCase):
         self.assertIn('"label": "ChatGPT"', page)
         self.assertNotIn('"label": "ChatGPT / Codex"', page)
         self.assertIn('"id": "Gemini CLI"', page)
-        self.assertIn('"label": "Gemini / Antigravity"', page)
+        self.assertIn('"label": "Gemini"', page)
+        self.assertNotIn('"label": "Gemini / Antigravity"', page)
         self.assertIn('"id": "Grok Build"', page)
         self.assertIn("当天 API 等价价值 ÷ 当天订阅日成本", page)
         self.assertIn("p.start_date<=date", page)

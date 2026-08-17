@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import html
 
+from favicon import FAVICON_TAG, LOGO_IMG
+
 
 EN = {
     "title": "AI Subscription Usage: Settings",
@@ -66,7 +68,8 @@ def render_settings(language: str, current_settings: dict, autostart_enabled: bo
     style = (
         ':root{color-scheme:dark;--bg:#080d18;--card:#101a2b;--ink:#ecf5ff;--sub:#a8b7ce;--line:#263854;--accent:#61a8ff}'
         '*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}'
-        'main{max-width:720px;margin:auto;padding:38px 24px 72px}h1{font-size:26px;margin:0 0 24px}'
+        'main{max-width:720px;margin:auto;padding:38px 24px 72px}h1{font-size:26px;margin:0 0 24px;display:flex;align-items:center;gap:12px}'
+        '.brand-logo{width:30px;height:30px;border-radius:7px;flex:none}'
         'section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:16px}'
         '.row{display:flex;align-items:center;justify-content:space-between;gap:16px}'
         '.row+.row{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}'
@@ -92,8 +95,8 @@ def render_settings(language: str, current_settings: dict, autostart_enabled: bo
         "document.getElementById('clear-diagnostics').addEventListener('click',async()=>{try{await post('clear_diagnostics',null);document.getElementById('status').textContent='"
         + html.escape(t["diagnostics_cleared"]) + "'}catch{}});"
     )
-    return f'''<!doctype html><html lang="{html.escape(language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(t['title'])}</title><style>{style}</style></head><body><main>
-<h1>{html.escape(t['title'])} · Ver {html.escape(app_version)}</h1>
+    return f'''<!doctype html><html lang="{html.escape(language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{FAVICON_TAG}<title>{html.escape(t['title'])}</title><style>{style}</style></head><body><main>
+<h1>{LOGO_IMG}{html.escape(t['title'])} · Ver {html.escape(app_version)}</h1>
 <section><div class="label">{html.escape(t['language'])}</div><div class="chips" style="margin-top:10px">{language_buttons}</div></section>
 <section>{autostart_row}{telemetry_row}</section>
 <section><div class="label">{html.escape(t['refresh_interval'])}</div><div class="chips" style="margin-top:10px">{refresh_buttons}</div></section>

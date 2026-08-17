@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
+from favicon import FAVICON_TAG, LOGO_IMG
 from report_i18n import localize_html
 from source_discovery import load_configured_sources
 
@@ -289,15 +290,56 @@ def parse_gemini_cli(root: Path, since: dt.date) -> tuple[list[Usage], int]:
 
 
 def parse_grok_build(root: Path, since: dt.date) -> tuple[list[Usage], int]:
-    """Read Grok Build local session context snapshots.
+    """Read Grok Build local session usage records.
 
-    Grok Build does not write a billable input/output ledger. Its signals file
-    records current context tokens, which is shown as an estimate only.
+    Three local sources exist, tried in order of preference, and each is used
+    on its own (no summing across sources) to avoid double-counting the same
+    underlying usage: per-turn updates.jsonl (includes a model breakdown),
+    then the global unified.jsonl operation log, then signals.json context
+    snapshots as an estimate-only last resort.
     """
     usages: dict[tuple[str, str], Usage] = {}
     files_read = 0
     if not root.exists():
         return [], files_read
+
+    update_paths = sorted(set(root.rglob("updates.jsonl")))
+    for path in update_paths:
+        files_read += 1
+        try:
+            stream = path.open("r", encoding="utf-8")
+        except OSError:
+            continue
+        with stream:
+            for line in stream:
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(record, dict) or record.get("sessionUpdate") != "turn_completed":
+                    continue
+                usage = record.get("usage")
+                if not isinstance(usage, dict):
+                    continue
+                date = record_date(record, path)
+                try:
+                    if dt.date.fromisoformat(date) < since:
+                        continue
+                except ValueError:
+                    continue
+                model_usage = usage.get("modelUsage")
+                if isinstance(model_usage, dict) and len(model_usage) == 1:
+                    model = next(iter(model_usage))
+                else:
+                    model = find_model(record, "未记录模型")
+                key = (date, model)
+                item = usages.setdefault(key, Usage("Grok Build", model, date, cache_is_subset_of_input=True))
+                item.input_tokens += as_int(usage.get("inputTokens"))
+                item.output_tokens += as_int(usage.get("outputTokens"))
+                item.cached_input_tokens += as_int(usage.get("cachedReadTokens"))
+    if update_paths:
+        return sorted(usages.values(), key=lambda item: (item.date, item.model)), files_read
+
     unified_paths = sorted(set(root.rglob("unified.jsonl")))
     logs_path = root.parent / "logs" / "unified.jsonl"
     if logs_path.exists():
@@ -334,8 +376,8 @@ def parse_grok_build(root: Path, since: dt.date) -> tuple[list[Usage], int]:
                 key = (date, model)
                 item = usages.setdefault(key, Usage("Grok Build", model, date, cache_is_subset_of_input=True))
                 item.input_tokens += as_int(usage.get("prompt_tokens", usage.get("promptTokens", usage.get("input_tokens"))))
+                # reasoning_tokens is a subset of completion_tokens, not additional output.
                 item.output_tokens += as_int(usage.get("completion_tokens", usage.get("completionTokens", usage.get("output_tokens"))))
-                item.output_tokens += as_int(usage.get("reasoning_tokens", usage.get("reasoningTokens")))
                 item.cached_input_tokens += as_int(usage.get("cached_prompt_tokens", usage.get("cache_read_input_tokens")))
     if unified_paths:
         return sorted(usages.values(), key=lambda item: (item.date, item.model)), files_read
@@ -462,7 +504,7 @@ def subscription_plan_data(pricing: dict[str, Any]) -> list[dict[str, Any]]:
 PROVIDER_META = {
     "Codex": {"label": "ChatGPT", "plan": "ChatGPT", "color": "#61a8ff"},
     "Claude Code": {"label": "Claude", "plan": "Claude", "color": "#ff9f43"},
-    "Gemini CLI": {"label": "Gemini / Antigravity", "plan": "Gemini", "color": "#23d8aa"},
+    "Gemini CLI": {"label": "Gemini", "plan": "Gemini", "color": "#23d8aa"},
     "Grok Build": {"label": "Grok", "plan": "Grok", "color": "#b180ff"},
 }
 
@@ -559,10 +601,10 @@ def render_dashboard(
         "unpriced_models": sorted({item.model for item in usages if api_equivalent_cost(item, pricing) is None}),
     }
     data = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-    return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>订阅 AI 用量报表</title><style>
-:root{{--bg:#080d18;--card:#101a2b;--card2:#0c1728;--ink:#ecf5ff;--sub:#91a3bf;--line:#263854;--accent:#61a8ff;--danger:#ff6f86;color-scheme:dark}}*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--ink);font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}}main{{max-width:1540px;margin:auto;padding:36px 24px 70px}}h1{{font-size:30px;margin:0}}h2{{font-size:19px;margin:0 0 8px}}h3{{font-size:15px;margin:0 0 10px}}p{{color:var(--sub);line-height:1.6;margin:6px 0 0}}.head{{display:flex;justify-content:space-between;gap:20px;align-items:end}}.head-actions{{display:flex;align-items:center;gap:10px}}.head-actions button{{height:36px}}.section{{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:18px;overflow-x:auto}}.summary{{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;min-width:1100px}}.plan-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}}.detail-summary{{display:grid;grid-template-columns:repeat(5,minmax(180px,1fr));gap:12px;min-width:980px}}.metric-card,.plan-card{{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--card2)}}.metric-card{{display:flex;flex-direction:column;justify-content:space-between;min-height:108px}}.metric{{font-size:25px;font-weight:750;margin:0;padding-top:12px;white-space:nowrap}}.muted{{color:var(--sub)}}.plan-card{{min-height:126px}}.plan-card .price{{font-size:21px;font-weight:750;margin:10px 0}}.editor{{display:grid;grid-template-columns:minmax(210px,1.15fr) minmax(170px,.9fr) minmax(220px,1fr) minmax(280px,1.45fr) 132px;gap:16px;align-items:end;margin-top:24px}}label{{display:grid;gap:9px;color:var(--sub);font-size:13px}}input,select,button{{height:48px;border-radius:10px;border:1px solid var(--line);font:inherit}}input,select{{background:#0a1322;color:var(--ink);padding:0 14px;min-width:0}}input[type=number]{{appearance:textfield;-moz-appearance:textfield}}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{{-webkit-appearance:none;margin:0}}button{{background:var(--accent);color:#07101d;border-color:var(--accent);font-weight:750;padding:0 14px;cursor:pointer}}button:hover{{filter:brightness(1.12)}}.chartbox{{border:1px solid var(--line);border-radius:13px;padding:16px;margin-top:16px;background:var(--card2);overflow:hidden}}.legend{{display:flex;gap:17px;flex-wrap:wrap;margin:10px 0 5px;color:var(--sub)}}.dot{{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}}svg{{width:100%;height:300px;display:block}}.axis{{stroke:#365173;stroke-width:1}}.gridline{{stroke:#223651;stroke-width:1}}.tick{{fill:#91a3bf;font-size:11px}}.hoverline{{stroke:#d8f2ff;stroke-width:1;stroke-dasharray:4 4}}.tip{{position:fixed;display:none;pointer-events:none;z-index:10;background:#050b14;color:#fff;border:1px solid #405778;border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.6;box-shadow:0 10px 28px #0009}}.tabs{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:20px 0 22px}}.tab{{background:#15243a;color:var(--sub);border-color:var(--line);width:100%;font-size:15px}}.tab.active{{background:var(--accent);color:#07101d}}.detail{{display:none}}.detail.active{{display:block}}table{{width:100%;border-collapse:collapse;margin-top:18px}}th,td{{padding:11px 8px;border-top:1px solid var(--line);text-align:center}}th{{font-size:12px;color:var(--sub);text-align:center}}.empty{{padding:26px;text-align:center;color:var(--sub)}}@media(max-width:900px){{.plan-grid{{grid-template-columns:1fr 1fr}}.editor{{grid-template-columns:1fr 1fr}}}}@media(max-width:560px){{main{{padding:24px 14px}}.plan-grid,.editor{{grid-template-columns:1fr}}svg{{height:260px}}}}
+    return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{FAVICON_TAG}<title>订阅 AI 用量报表</title><style>
+:root{{--bg:#080d18;--card:#101a2b;--card2:#0c1728;--ink:#ecf5ff;--sub:#91a3bf;--line:#263854;--accent:#61a8ff;--danger:#ff6f86;color-scheme:dark}}*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--ink);font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}}main{{max-width:1540px;margin:auto;padding:36px 24px 70px}}h1{{font-size:30px;margin:0;display:flex;align-items:center;gap:12px}}.brand-logo{{width:36px;height:36px;border-radius:8px;flex:none}}h2{{font-size:19px;margin:0 0 8px}}h3{{font-size:15px;margin:0 0 10px}}p{{color:var(--sub);line-height:1.6;margin:6px 0 0}}.head{{display:flex;justify-content:space-between;gap:20px;align-items:end}}.head-actions{{display:flex;align-items:center;gap:10px}}.head-actions button{{height:36px}}.section{{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:18px;overflow-x:auto}}.summary{{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;min-width:1100px}}.plan-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}}.detail-summary{{display:grid;grid-template-columns:repeat(5,minmax(180px,1fr));gap:12px;min-width:980px}}.metric-card,.plan-card{{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--card2)}}.metric-card{{display:flex;flex-direction:column;justify-content:space-between;min-height:108px}}.metric{{font-size:25px;font-weight:750;margin:0;padding-top:12px;white-space:nowrap}}.muted{{color:var(--sub)}}.plan-card{{min-height:126px}}.plan-card .price{{font-size:21px;font-weight:750;margin:10px 0}}.editor{{display:grid;grid-template-columns:minmax(210px,1.15fr) minmax(170px,.9fr) minmax(220px,1fr) minmax(280px,1.45fr) 132px;gap:16px;align-items:end;margin-top:24px}}label{{display:grid;gap:9px;color:var(--sub);font-size:13px}}input,select,button{{height:48px;border-radius:10px;border:1px solid var(--line);font:inherit}}input,select{{background:#0a1322;color:var(--ink);padding:0 14px;min-width:0}}input[type=number]{{appearance:textfield;-moz-appearance:textfield}}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{{-webkit-appearance:none;margin:0}}button{{background:var(--accent);color:#07101d;border-color:var(--accent);font-weight:750;padding:0 14px;cursor:pointer}}button:hover{{filter:brightness(1.12)}}.chartbox{{border:1px solid var(--line);border-radius:13px;padding:16px;margin-top:16px;background:var(--card2);overflow:hidden}}.legend{{display:flex;gap:17px;flex-wrap:wrap;margin:10px 0 5px;color:var(--sub)}}.dot{{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}}svg{{width:100%;height:300px;display:block}}.axis{{stroke:#365173;stroke-width:1}}.gridline{{stroke:#223651;stroke-width:1}}.tick{{fill:#91a3bf;font-size:11px}}.hoverline{{stroke:#d8f2ff;stroke-width:1;stroke-dasharray:4 4}}.tip{{position:fixed;display:none;pointer-events:none;z-index:10;background:#050b14;color:#fff;border:1px solid #405778;border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.6;box-shadow:0 10px 28px #0009}}.tabs{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:20px 0 22px}}.tab{{background:#15243a;color:var(--sub);border-color:var(--line);width:100%;font-size:15px}}.tab.active{{background:var(--accent);color:#07101d}}.detail{{display:none}}.detail.active{{display:block}}table{{width:100%;border-collapse:collapse;margin-top:18px}}th,td{{padding:11px 8px;border-top:1px solid var(--line);text-align:center}}th{{font-size:12px;color:var(--sub);text-align:center}}.empty{{padding:26px;text-align:center;color:var(--sub)}}@media(max-width:900px){{.plan-grid{{grid-template-columns:1fr 1fr}}.editor{{grid-template-columns:1fr 1fr}}}}@media(max-width:560px){{main{{padding:24px 14px}}.plan-grid,.editor{{grid-template-columns:1fr}}svg{{height:260px}}}}
 .help-link{{display:inline-flex;align-items:center;height:36px;border:1px solid var(--line);border-radius:9px;padding:0 12px;color:var(--ink);background:#15243a;text-decoration:none}}
-</style></head><body><main><div class="head"><div><h1>订阅 AI 用量报表</h1><p>最近 {days} 天 · 按电脑当前时区分日 · 数据来自本机日志 · Ver {html.escape(app_version)}</p></div><div class="head-actions"><span class="muted" id="refresh-status">生成于本机</span><a class="help-link" href="http://127.0.0.1:17653/help">配置及使用说明</a><button id="refresh-local">更新本机数据</button></div></div>
+</style></head><body><main><div class="head"><div><h1>{LOGO_IMG}订阅 AI 用量报表</h1><p>最近 {days} 天 · 按电脑当前时区分日 · 数据来自本机日志 · Ver {html.escape(app_version)}</p></div><div class="head-actions"><span class="muted" id="refresh-status">生成于本机</span><a class="help-link" href="http://127.0.0.1:17653/help">配置及使用说明</a><button id="refresh-local">更新本机数据</button></div></div>
 <section class="section"><div class="summary"><div class="metric-card"><div class="muted">总 Token</div><div class="metric">{number(total_tokens)}</div></div><div class="metric-card"><div class="muted">输入 Token</div><div class="metric">{number(total_input)}</div></div><div class="metric-card"><div class="muted">输出 Token</div><div class="metric">{number(total_output)}</div></div><div class="metric-card"><div class="muted">API 等价价值</div><div class="metric" id="summary-api">—</div></div><div class="metric-card"><div class="muted">有效订阅成本</div><div class="metric" id="summary-sub">—</div></div><div class="metric-card"><div class="muted">价值倍数</div><div class="metric" id="summary-ratio">—</div></div></div></section>
 <section class="section"><h2>订阅计划</h2><p>每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。</p><div id="plan-grid" class="plan-grid"></div><div class="editor"><label>平台<select id="provider"></select></label><label>周期<select id="cycle"><option value="month">按月</option><option value="year">按年</option></select></label><label>生效日期<input id="start" type="date"></label><label>订阅金额（USD）<input id="amount" type="number" min="0" step="0.01" placeholder="输入订阅金额"></label><button id="save">保存计划</button></div></section>
 <section class="section"><h2>最近 {days} 天报表</h2><div class="chartbox"><h3>每日 Token</h3><p>各平台当天输入、输出和缓存口径合并后的 Token。</p><div class="legend" id="token-legend"></div><svg id="tokens" viewBox="0 0 1100 300" role="img" aria-label="各平台每日 Token 折线图"></svg></div><div class="chartbox"><h3>每日订阅价值倍数</h3><p>当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。</p><div class="legend" id="ratio-legend"></div><svg id="ratio" viewBox="0 0 1100 300" role="img" aria-label="各平台每日订阅价值倍数折线图"></svg></div></section>

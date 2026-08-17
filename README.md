@@ -1,5 +1,41 @@
 # AI Subscription Usage
 
+A local, no-account menu-bar / system-tray app that reads on-device usage logs from ChatGPT, Claude Code, Claude Desktop, Gemini CLI, and Grok, then compares 30 days of API-equivalent value against what you actually pay for each subscription. Everything runs on your own machine — no AI API key, no account login, no OAuth/Auth Token/Cookie access, and no cloud service in the loop.
+
+**Features**
+- 30-day dashboard: total/input/output tokens, API-equivalent value, effective subscription cost, and value multiple, per provider
+- Daily token and value-multiple charts, per-model breakdown
+- Subscription plan history (monthly/annual, prorated by effective date)
+- Auto-discovery of local usage logs, with a safe, whitelisted way to point it at a non-default folder
+- Seven languages: 简体中文, English, 日本語, 한국어, Français, Deutsch, Español
+- Launch at login, adjustable refresh interval, one-click access to your local data folder
+- Opt-in, anonymized diagnostics only — never conversation content, file paths, or credentials
+
+**Screenshots**
+
+| Report | Settings |
+| --- | --- |
+| ![Report dashboard](assets/screenshots/report.png) | ![Settings panel](assets/screenshots/settings.png) |
+
+**Getting it**
+
+No tagged release has been cut yet, so there isn't a prebuilt download on the [Releases](../../releases) page yet. Until then, build it yourself:
+
+```bash
+python3 -m venv .venv-desktop
+.venv-desktop/bin/pip install -r requirements-desktop.txt
+.venv-desktop/bin/pip install pyinstaller
+.venv-desktop/bin/pyinstaller --clean --noconfirm ai-subscription-usage.spec
+```
+
+The macOS build lands in `dist/AI Subscription Usage.app`; the Windows build (compiled and self-tested in CI, not yet hands-tested on a physical Windows machine — see the "Windows" note below) lands in `dist/AI Subscription Usage.exe`.
+
+**Not supported**
+
+Google Antigravity / Gemini Spark write encrypted local session files (`~/.gemini/antigravity/conversations/*.pb`) with no readable structure and no documented safe local API, so token usage for those cannot be read — they show up as detected but unpriced. Everything else in this README covers what already works.
+
+---
+
 AI Subscription Usage 读取本机 ChatGPT、Claude Desktop、Claude Code、Gemini CLI、Antigravity 和 Grok 的公开本地用量记录，将最近 30 天 Token 按官方 API 单价折算，并与同区间订阅成本比较。计算、图表和刷新均由确定性程序完成，不需要任何 AI API Key。ChatGPT 当前使用内部 Codex JSONL 格式，因此默认数据目录仍是 `~/.codex/sessions/`。
 
 版本号显示在托盘菜单、报表页和帮助页。macOS 用户数据保存在 `~/Library/Application Support/AI Subscription Usage/`，Windows 用户数据保存在 `%LOCALAPPDATA%\AI Subscription Usage\`。升级只替换程序、内置价格库、语言和适配器；订阅计划、数据源配置、语言、诊断授权和本机报表不会被安装包覆盖。迁移配置前会在用户数据目录的 `backups/` 中保存原文件。
@@ -71,10 +107,6 @@ python3 -m venv .venv-desktop
 ## 自动发布
 
 `.github/workflows/release.yml` 在版本标签推送后执行测试，构建 macOS 与 Windows 产物，生成 SHA-256 校验文件并创建 GitHub Release。正式自动更新还需要 GitHub 仓库地址、macOS Developer ID、公证凭证和 Windows 代码签名证书。
-
-## 公网验收版本
-
-`scripts/cloud_deploy.sh --execute` 只替换 `token.report.test.apeai.online` 的静态 HTML，不修改 Nginx、证书、IP 白名单、容器或其他项目。公网版本只能浏览已部署数据；读取本机最新日志仍由桌面程序执行。
 
 ## 许可证
 

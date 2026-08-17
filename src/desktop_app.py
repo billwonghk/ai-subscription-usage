@@ -50,7 +50,7 @@ SETTINGS_GEAR = "⚙️" if sys.platform == "darwin" else "⚙"
 
 
 def load_settings() -> dict:
-    defaults = {"language": system_language(), "telemetry_consent": False, "telemetry_endpoint": "", "price_manifest_url": "", "releases_url": "", "refresh_hours": 24, "update_check_hours": 24, "onboarding_complete": False}
+    defaults = {"language": system_language(), "telemetry_consent": False, "telemetry_endpoint": "", "price_manifest_url": "https://raw.githubusercontent.com/billwonghk/ai-subscription-usage/main/config/pricing-manifest.json", "releases_url": "https://api.github.com/repos/billwonghk/ai-subscription-usage/releases/latest", "refresh_hours": 24, "update_check_hours": 24, "onboarding_complete": False}
     try:
         loaded = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -161,12 +161,23 @@ class DesktopApp:
         try:
             pricing = load_runtime_pricing()
             usages, source_files = ai_usage_report.collect_usages(30)
+            unknown = sorted({item.model for item in usages if ai_usage_report.api_equivalent_cost(item, pricing) is None})
+            newly_found = unknown
+            auto_updated_version = None
+            if unknown and self.settings.get("price_manifest_url"):
+                try:
+                    auto_updated_version = update_pricing(self.settings["price_manifest_url"], PRICING_PATH)
+                    pricing = load_runtime_pricing()
+                    unknown = sorted({item.model for item in usages if ai_usage_report.api_equivalent_cost(item, pricing) is None})
+                except Exception:
+                    auto_updated_version = None
             REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
             base_report = ai_usage_report.render_dashboard(usages, 30, source_files, pricing, app_version=APP_VERSION)
             BASE_REPORT_PATH.write_text(base_report, encoding="utf-8")
             REPORT_PATH.write_text(localize_html(base_report, self.settings["language"]), encoding="utf-8")
             write_help(HELP_PATH, self.settings["language"], APP_VERSION)
-            unknown = sorted({item.model for item in usages if ai_usage_report.api_equivalent_cost(item, pricing) is None})
+            if auto_updated_version:
+                notify(self.messages["app_name"], self.messages["auto_price_update_message"].format(model=", ".join(newly_found), version=auto_updated_version))
             if unknown:
                 notify(self.messages["new_model_title"], self.messages["new_model_message"].format(model=", ".join(unknown)))
             notify(self.messages["app_name"], self.messages["refresh_done"])

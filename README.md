@@ -1,5 +1,7 @@
 # AI Subscription Usage
 
+**English** | [简体中文](README.zh-CN.md)
+
 A local, no-account menu-bar / system-tray app that reads on-device usage logs from ChatGPT, Claude Code, Claude Desktop, Gemini CLI, and Grok, then compares 30 days of API-equivalent value against what you actually pay for each subscription. Everything runs on your own machine — no AI API key, no account login, no OAuth/Auth Token/Cookie access, and no cloud service in the loop.
 
 **Features**
@@ -7,6 +9,7 @@ A local, no-account menu-bar / system-tray app that reads on-device usage logs f
 - Daily token and value-multiple charts, per-model breakdown
 - Subscription plan history (monthly/annual, prorated by effective date)
 - Auto-discovery of local usage logs, with a safe, whitelisted way to point it at a non-default folder
+- Model pricing for supported models refreshes automatically about once a week from [OpenRouter](https://openrouter.ai/)'s public API pricing data — no manual editing needed
 - Seven languages: 简体中文, English, 日本語, 한국어, Français, Deutsch, Español
 - Launch at login, adjustable refresh interval, one-click access to your local data folder
 - Opt-in, anonymized diagnostics only — never conversation content, file paths, or credentials
@@ -33,9 +36,9 @@ python3 -m venv .venv-desktop
 .venv-desktop/bin/pyinstaller --clean --noconfirm ai-subscription-usage.spec
 ```
 
-The macOS build lands in `dist/AI Subscription Usage.app`; the Windows build (compiled and self-tested in CI, not yet hands-tested on a physical Windows machine — see the "Windows" note below) lands in `dist/AI Subscription Usage.exe`.
+The macOS build lands in `dist/AI Subscription Usage.app`; the Windows build (compiled and self-tested in CI, not yet hands-tested on a physical Windows machine — see the table below) lands in `dist/AI Subscription Usage.exe`.
 
-**What's verified so far**
+## What's verified so far
 
 | Platform | macOS (desktop + CLI) | Windows (desktop + CLI) |
 | --- | --- | --- |
@@ -49,71 +52,49 @@ Gemini Desktop (Antigravity/Spark) writes encrypted local session files (`~/.gem
 
 If you have a Windows machine, or you actually use Grok, testing and feedback are especially welcome — those are the two areas that can't be verified here. Please open an [Issue](../../issues) if you run into problems.
 
-**License**
+## Overview
 
-This project is released under the [PolyForm Noncommercial 1.0.0](LICENSE) license — free to use, study, modify, and share for any non-commercial purpose. Commercial use is not permitted. Questions about the license, or about a specific use case? Please open an [Issue](../../issues).
+Version numbers are shown in the tray menu, the report page, and the help page. macOS stores user data in `~/Library/Application Support/AI Subscription Usage/`; Windows stores it in `%LOCALAPPDATA%\AI Subscription Usage\`. An upgrade only replaces the program, the built-in pricing database, language files, and adapters — subscription plans, data-source configuration, language choice, diagnostics opt-in, and local reports are never overwritten by the installer. Before migrating settings, the original files are backed up under `backups/` in the user data directory.
 
----
+The public GitHub release does not contain subscription plans, detection results, local absolute paths, token counts, or generated reports — detection results are only ever generated live, on the machine where the app is installed. The release workflow runs `scripts/privacy_check.py` first and stops the build if it fails.
 
-AI Subscription Usage 读取本机 ChatGPT、Claude Desktop、Claude Code、Gemini CLI、Antigravity 和 Grok 的公开本地用量记录，将最近 30 天 Token 按官方 API 单价折算，并与同区间订阅成本比较。计算、图表和刷新均由确定性程序完成，不需要任何 AI API Key。ChatGPT 当前使用内部 Codex JSONL 格式，因此默认数据目录仍是 `~/.codex/sessions/`。
+## Data sources
 
-版本号显示在托盘菜单、报表页和帮助页。macOS 用户数据保存在 `~/Library/Application Support/AI Subscription Usage/`，Windows 用户数据保存在 `%LOCALAPPDATA%\AI Subscription Usage\`。升级只替换程序、内置价格库、语言和适配器；订阅计划、数据源配置、语言、诊断授权和本机报表不会被安装包覆盖。迁移配置前会在用户数据目录的 `backups/` 中保存原文件。
-
-GitHub 通用发布包不包含订阅计划、Current detection、本机绝对路径、Token 统计或生成报表。Current detection 只在安装后的电脑上实时生成。发布工作流先执行 `scripts/privacy_check.py`，检查失败时停止构建。
-
-macOS 版本运行在顶部菜单栏。Windows 版本运行在右下角系统托盘，由 GitHub Actions 的 Windows Runner 构建 `AI Subscription Usage.exe` 和 Inno Setup 安装程序。
-
-报表顶部展示总 Token、输入 Token、输出 Token、API 等价价值、有效订阅成本和价值倍数。页面还提供四个平台的每日 Token、每日价值倍数、模型明细和未计价 Token。月订阅按 30 天、年订阅按 360 天分摊，计划生效日前不计算订阅成本。
-
-## 各平台验证情况
-
-| 平台 | Mac（桌面版 + 命令行） | Windows（桌面版 + 命令行） |
+| Platform | Local folder | What's counted |
 | --- | --- | --- |
-| ChatGPT | ✅ 能，已验证 | 🟡 代码逻辑一样，理论上能，但没在真 Windows 上测过 |
-| Claude | ✅ 能，已验证（桌面版和命令行走同一份记录） | 🟡 桌面版专门写了 Windows 路径，命令行理论上也行，但没在真 Windows 上测过 |
-| Gemini CLI | ✅ 能，已验证 | 🟡 理论上能，没在真 Windows 上测过 |
-| Gemini 桌面版（Antigravity/Spark） | ❌ 确认不行，文件是加密的 | ❌ 大概率也不行（同一个产品），但没在 Windows 上专门确认过 |
-| Grok | 🟡 代码是对的，但本机没有真实 Grok 数据，没法验证准不准 | 🟡 同样没验证，而且 Windows 更没测过 |
+| ChatGPT | `~/.codex/sessions/` | Internal Codex JSONL; input, output, and cached input |
+| Claude Code | `~/.claude/projects/` | Input, output, cache read, and cache write |
+| Claude Desktop | `~/Library/Application Support/Claude/local-agent-mode-sessions/` | Detects desktop sessions; token usage is aggregated via the shared Claude JSONL log |
+| Gemini CLI | `~/.gemini/tmp/*/chats/` | Input, output, thinking, and cached tokens |
+| Antigravity Desktop | `~/.gemini/antigravity/` | Auto-detected; not priced while the `.pb` format's token fields remain unverified |
+| Antigravity CLI | `~/.gemini/antigravity-cli/` | Auto-detected; not priced while the format is unverified |
+| Grok Build | `~/.grok/logs/unified.jsonl` | Prefers exact input, output, reasoning, and cached tokens |
+| Grok Build fallback | `~/.grok/sessions/**/signals.json` | Used only when `unified.jsonl` isn't present; flagged as an estimate |
 
-如果你有 Windows 电脑，或者正好在用 Grok，特别欢迎帮忙试用、反馈问题——这两块我们自己这边测不到。有问题请到 [Issues](../../issues) 里说一声。
+Model names must match `config/pricing.json` exactly. Unknown models still have their tokens counted, but no API-equivalent value is calculated for them, and no other model's price is applied. The pricing database can store different prices per effective date; historical records use whichever price was in effect on that day.
 
-## 数据来源
-
-| 平台 | 本机目录 | 数据口径 |
-| --- | --- | --- |
-| ChatGPT | `~/.codex/sessions/` | 内部 Codex JSONL；输入、输出和缓存输入 |
-| Claude Code | `~/.claude/projects/` | 输入、输出、缓存读取和缓存写入 |
-| Claude Desktop | `~/Library/Application Support/Claude/local-agent-mode-sessions/` | 检测桌面会话；Token 使用量通过共享 Claude JSONL 汇总 |
-| Gemini CLI | `~/.gemini/tmp/*/chats/` | 输入、输出、思考和缓存 Token |
-| Antigravity Desktop | `~/.gemini/antigravity/` | 自动检测；当前 `.pb`格式未验证 Token 字段时不计价 |
-| Antigravity CLI | `~/.gemini/antigravity-cli/` | 自动检测；未验证格式不计价 |
-| Grok Build | `~/.grok/logs/unified.jsonl` | 优先读取精确输入、输出、推理和缓存 Token |
-| Grok Build 降级来源 | `~/.grok/sessions/**/signals.json` | 仅在没有 `unified.jsonl` 时使用，标记为估算 |
-
-模型名必须与 `config/pricing.json` 精确匹配。未知模型继续统计 Token，但不计算 API 等价价值，也不会套用其他模型价格。价格库支持按生效日期保存不同价格，历史记录使用当天有效价格。
-
-## 命令行生成
+## Generating from the command line
 
 ```bash
 python3 src/ai_usage_report.py --days 30
 ```
 
-结果写入 `outputs/ai-usage-report.html`。页面右上角的“更新本机数据”按钮连接桌面应用在 `127.0.0.1:17653` 提供的本机刷新接口；端口只绑定回环地址，不对局域网或公网开放。
+Output is written to `outputs/ai-usage-report.html`. The "Refresh local data" button in the top-right corner talks to the local refresh endpoint the desktop app serves on `127.0.0.1:17653`; the port only binds to loopback and is never exposed to the LAN or the internet.
 
-## macOS 菜单栏与 Windows 托盘
+## macOS menu bar & Windows tray
 
-桌面应用提供打开报表、立即更新、更新模型价格、检查应用更新、切换语言、配置及使用说明、匿名诊断开关和退出。首次启动自动打开配置及使用说明，其中显示本机数据源检测状态、诊断命令和可复制给本机 AI 的安全配置提示词。默认每 24 小时更新一次本机数据并检查应用版本。
+The desktop app provides: open report, refresh now, update model pricing, check for app updates, switch language, configuration & user guide, an anonymous-diagnostics toggle, and quit. On first launch it automatically opens the configuration & user guide, which shows local data-source detection status, diagnostic commands, and a safe configuration prompt you can copy to your own local AI assistant. By default it refreshes local data and checks the app version every 24 hours.
 
-## 自动发现与 AI 辅助配置
+## Auto-discovery & AI-assisted configuration
 
-应用只检查已登记的默认目录，不扫描整个硬盘。运行 `AI Subscription Usage --doctor --json` 查看 ChatGPT、Claude Desktop、Claude Code、Gemini CLI、Antigravity Desktop、Antigravity CLI 和 Grok 的检测状态。非默认目录使用受控命令配置：
+The app only checks registered default folders — it never scans the whole disk. Run `AI Subscription Usage --doctor --json` to see detection status for ChatGPT, Claude Desktop, Claude Code, Gemini CLI, Antigravity Desktop, Antigravity CLI, and Grok. Non-default folders are configured through controlled commands:
 
 ```bash
 AI\ Subscription\ Usage --configure-source --provider chatgpt --surface chatgpt-desktop --format codex-jsonl --path "$HOME/.codex/sessions"
 AI\ Subscription\ Usage --verify-sources --json
 ```
 
-`SETUP_WITH_AI.md` 可以交给用户自己的 ChatGPT、Claude Code、Gemini CLI 或其他本机 AI。AI只能调用上述只读诊断与受控配置命令。配置文件不接受命令、网络地址、凭证或任意解析代码。
+`SETUP_WITH_AI.md` can be handed to your own ChatGPT, Claude Code, Gemini CLI, or other local AI assistant — it can only call the read-only diagnostic and controlled-configuration commands above. The configuration file never accepts commands, network addresses, credentials, or arbitrary parsing code.
 
 ```bash
 python3 -m venv .venv-desktop
@@ -121,24 +102,26 @@ python3 -m venv .venv-desktop
 .venv-desktop/bin/python src/desktop_app.py
 ```
 
-桌面应用是长期运行的菜单栏或托盘进程。启动前应确认本机没有其他程序占用 `17653`，退出菜单会关闭托盘和本机刷新接口。
+The desktop app is a long-running menu-bar/tray process. Make sure nothing else on your machine is already using port `17653` before starting it; quitting from the menu shuts down both the tray icon and the local refresh endpoint.
 
-## 多语言
+## Multiple languages
 
-桌面外壳包含简体中文、英语、日语、韩语、法语、德语和西班牙语资源，默认跟随操作系统语言，可从托盘菜单切换。所有计算字段和价格数据库不因语言变化。
+The desktop shell ships with Simplified Chinese, English, Japanese, Korean, French, German, and Spanish resources. It follows the OS language by default and can be switched from the settings page. No calculated field or pricing data changes with language.
 
-## 价格库更新
+## Pricing database updates
 
-`config/pricing.json` 保存价格版本、官方来源、模型价格和生效日期。客户端从价格清单下载价格文件，先校验 SHA-256 和字段结构，再原子替换本机价格库。发布 GitHub 仓库后，将 `config/update-settings.example.json` 中的占位地址替换为正式仓库地址，并发布 `pricing-manifest.json`。
+`config/pricing.json` stores the pricing version, official sources, model prices, and effective dates. The client downloads pricing updates from a manifest, verifies the SHA-256 checksum and field structure, then atomically replaces the local pricing database. This tool is meant to show a trend, not to be a perfectly precise pricing reference, so the update source is [OpenRouter](https://openrouter.ai/)'s public API pricing data — a well-known LLM proxy whose API prices generally track official rates.
 
-## 匿名诊断
+`config/model_id_map.json` maps this project's local model names to their exact OpenRouter model id. `scripts/fetch_pricing.py` uses that map to pull current prices and rewrite `config/pricing.json` and `config/pricing-manifest.json`; `.github/workflows/update-pricing.yml` runs it automatically about once a week and commits only if a price actually changed. A genuine price change is recorded as a new dated period so past report dates keep using whatever rate was actually in effect back then. Models that already use a hand-written dated schedule are left untouched by the automation. When usage logs show a brand-new model name that isn't in the map yet, it's simply shown as unpriced until a line is added to `config/model_id_map.json` — the desktop app also tries an on-the-spot price refresh the moment it detects a new model.
 
-匿名诊断默认关闭，用户在托盘菜单明确开启后才上传。允许字段只有应用版本、操作系统、语言、错误模块、错误类型、脱敏调用栈和适配器状态。禁止上传对话正文、提示词、回复内容、用户名、本机文件路径、API Key、订阅信息、Token 明细和原始日志。AI Crew 诊断入口发布后写入 `telemetry_endpoint`。
+## Anonymous diagnostics
 
-## 自动发布
+Anonymous diagnostics are off by default and only upload after you explicitly turn them on in settings. Allowed fields are limited to: app version, OS, language, error module, error type, a redacted stack trace, and adapter status. Never uploaded: conversation content, prompts, replies, usernames, local file paths, API keys, subscription details, token breakdowns, or raw logs. The `telemetry_endpoint` will be filled in once the diagnostics intake is published.
 
-`.github/workflows/release.yml` 在版本标签推送后执行测试，构建 macOS 与 Windows 产物，生成 SHA-256 校验文件并创建 GitHub Release。正式自动更新还需要 GitHub 仓库地址、macOS Developer ID、公证凭证和 Windows 代码签名证书。
+## Automatic releases
 
-## 许可证
+`.github/workflows/release.yml` runs tests after a version tag is pushed, builds macOS and Windows artifacts, generates SHA-256 checksums, and creates a GitHub Release. Fully automatic updates additionally require a GitHub repo address, a macOS Developer ID, notarization credentials, and a Windows code-signing certificate.
 
-本项目采用 [PolyForm Noncommercial 1.0.0](LICENSE) 许可证：可以免费使用、学习、修改和分享，但不能用于商业用途。对许可证有疑问，或者想确认某个用法算不算商业使用，欢迎在 [Issues](../../issues) 里联系我。复用第三方代码时仍需把对方的许可证、版权声明和来源写入 `THIRD_PARTY_NOTICES.md`。
+## License
+
+This project is released under the [PolyForm Noncommercial 1.0.0](LICENSE) license — free to use, study, modify, and share for any non-commercial purpose. Commercial use is not permitted. Questions about the license, or about a specific use case? Please open an [Issue](../../issues). Reused third-party code must still have its license, copyright notice, and source recorded in `THIRD_PARTY_NOTICES.md`.

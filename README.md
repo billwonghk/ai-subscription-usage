@@ -17,6 +17,11 @@ A local, no-account menu-bar / system-tray app that reads on-device usage logs f
 | --- | --- |
 | ![Report dashboard](assets/screenshots/report.png) | ![Settings panel](assets/screenshots/settings.png) |
 
+Per-provider detail (per-model tokens and value), and the same report in Chinese:
+
+![Claude provider detail](assets/screenshots/report-claude-tab.png)
+![Report in Chinese](assets/screenshots/report-zh.png)
+
 **Getting it**
 
 No tagged release has been cut yet, so there isn't a prebuilt download on the [Releases](../../releases) page yet. Until then, build it yourself:
@@ -30,9 +35,23 @@ python3 -m venv .venv-desktop
 
 The macOS build lands in `dist/AI Subscription Usage.app`; the Windows build (compiled and self-tested in CI, not yet hands-tested on a physical Windows machine — see the "Windows" note below) lands in `dist/AI Subscription Usage.exe`.
 
-**Not supported**
+**What's verified so far**
 
-Google Antigravity / Gemini Spark write encrypted local session files (`~/.gemini/antigravity/conversations/*.pb`) with no readable structure and no documented safe local API, so token usage for those cannot be read — they show up as detected but unpriced. Everything else in this README covers what already works.
+| Platform | macOS (desktop + CLI) | Windows (desktop + CLI) |
+| --- | --- | --- |
+| ChatGPT | ✅ Works, verified | 🟡 Same code path, should work — not tested on real Windows |
+| Claude | ✅ Works, verified (desktop and CLI share the same log) | 🟡 Desktop has a dedicated Windows path; CLI should work too — not tested on real Windows |
+| Gemini CLI | ✅ Works, verified | 🟡 Should work — not tested on real Windows |
+| Gemini Desktop (Antigravity/Spark) | ❌ Confirmed not possible | ❌ Likely also not possible (same product) — not specifically confirmed |
+| Grok | 🟡 Code should be correct, but there's no real Grok data on this machine to verify against | 🟡 Also unverified, and Windows testing hasn't happened either |
+
+Gemini Desktop (Antigravity/Spark) writes encrypted local session files (`~/.gemini/antigravity/conversations/*.pb`) with no readable structure and no documented safe local API, so token usage for those cannot be read — they show up as detected but unpriced.
+
+If you have a Windows machine, or you actually use Grok, testing and feedback are especially welcome — those are the two areas that can't be verified here. Please open an [Issue](../../issues) if you run into problems.
+
+**License**
+
+This project is released under the [PolyForm Noncommercial 1.0.0](LICENSE) license — free to use, study, modify, and share for any non-commercial purpose. Commercial use is not permitted. Questions about the license, or about a specific use case? Please open an [Issue](../../issues).
 
 ---
 
@@ -45,6 +64,18 @@ GitHub 通用发布包不包含订阅计划、Current detection、本机绝对�
 macOS 版本运行在顶部菜单栏。Windows 版本运行在右下角系统托盘，由 GitHub Actions 的 Windows Runner 构建 `AI Subscription Usage.exe` 和 Inno Setup 安装程序。
 
 报表顶部展示总 Token、输入 Token、输出 Token、API 等价价值、有效订阅成本和价值倍数。页面还提供四个平台的每日 Token、每日价值倍数、模型明细和未计价 Token。月订阅按 30 天、年订阅按 360 天分摊，计划生效日前不计算订阅成本。
+
+## 各平台验证情况
+
+| 平台 | Mac（桌面版 + 命令行） | Windows（桌面版 + 命令行） |
+| --- | --- | --- |
+| ChatGPT | ✅ 能，已验证 | 🟡 代码逻辑一样，理论上能，但没在真 Windows 上测过 |
+| Claude | ✅ 能，已验证（桌面版和命令行走同一份记录） | 🟡 桌面版专门写了 Windows 路径，命令行理论上也行，但没在真 Windows 上测过 |
+| Gemini CLI | ✅ 能，已验证 | 🟡 理论上能，没在真 Windows 上测过 |
+| Gemini 桌面版（Antigravity/Spark） | ❌ 确认不行，文件是加密的 | ❌ 大概率也不行（同一个产品），但没在 Windows 上专门确认过 |
+| Grok | 🟡 代码是对的，但本机没有真实 Grok 数据，没法验证准不准 | 🟡 同样没验证，而且 Windows 更没测过 |
+
+如果你有 Windows 电脑，或者正好在用 Grok，特别欢迎帮忙试用、反馈问题——这两块我们自己这边测不到。有问题请到 [Issues](../../issues) 里说一声。
 
 ## 数据来源
 
@@ -110,4 +141,4 @@ python3 -m venv .venv-desktop
 
 ## 许可证
 
-项目自有代码采用 MIT 许可证。复用第三方代码时必须将许可证、版权声明和来源写入 `THIRD_PARTY_NOTICES.md`。
+本项目采用 [PolyForm Noncommercial 1.0.0](LICENSE) 许可证：可以免费使用、学习、修改和分享，但不能用于商业用途。对许可证有疑问，或者想确认某个用法算不算商业使用，欢迎在 [Issues](../../issues) 里联系我。复用第三方代码时仍需把对方的许可证、版权声明和来源写入 `THIRD_PARTY_NOTICES.md`。

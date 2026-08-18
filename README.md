@@ -1,6 +1,6 @@
 # AI Subscription Usage
 
-**English** | [简体中文](README.zh-CN.md)
+**English** | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
 A local, no-account menu-bar / system-tray app that reads on-device usage logs from ChatGPT, Claude Code, Claude Desktop, Gemini CLI, and Grok, then compares 30 days of API-equivalent value against what you actually pay for each subscription. Everything runs on your own machine — no AI API key, no account login, no OAuth/Auth Token/Cookie access, and no cloud service in the loop.
 
@@ -10,7 +10,7 @@ A local, no-account menu-bar / system-tray app that reads on-device usage logs f
 - Subscription plan history (monthly/annual, prorated by effective date)
 - Auto-discovery of local usage logs, with a safe, whitelisted way to point it at a non-default folder
 - Model pricing for supported models refreshes automatically about once a week from [OpenRouter](https://openrouter.ai/)'s public API pricing data — no manual editing needed
-- Seven languages: 简体中文, English, 日本語, 한국어, Français, Deutsch, Español
+- Seven languages: English, Français, Deutsch, Español, 简体中文, 日本語, 한국어
 - Launch at login, adjustable refresh interval, one-click access to your local data folder
 - Opt-in, anonymized diagnostics only — never conversation content, file paths, or credentials
 
@@ -27,7 +27,13 @@ Per-provider detail (per-model tokens and value), and the same report in Chinese
 
 **Getting it**
 
-No tagged release has been cut yet, so there isn't a prebuilt download on the [Releases](../../releases) page yet. Until then, build it yourself:
+Download the latest build from the [Releases](../../releases) page:
+- **macOS**: `AI-Subscription-Usage-macOS.zip` — unzip it and move `AI Subscription Usage.app` to Applications.
+- **Windows**: `AI-Subscription-Usage-Windows-Setup.exe` for a normal install (Start Menu shortcut, proper uninstall), or `AI-Subscription-Usage-Windows-Portable.zip` if you'd rather just unzip and run the .exe directly with nothing written to the registry or Program Files.
+
+Every release also ships a `SHA256SUMS.txt` to verify your download. The Windows build is compiled and self-tested in CI but hasn't been hands-tested on a physical Windows machine yet — see the table below.
+
+Prefer building from source instead?
 
 ```bash
 python3 -m venv .venv-desktop
@@ -36,7 +42,7 @@ python3 -m venv .venv-desktop
 .venv-desktop/bin/pyinstaller --clean --noconfirm ai-subscription-usage.spec
 ```
 
-The macOS build lands in `dist/AI Subscription Usage.app`; the Windows build (compiled and self-tested in CI, not yet hands-tested on a physical Windows machine — see the table below) lands in `dist/AI Subscription Usage.exe`.
+The macOS build lands in `dist/AI Subscription Usage.app`; the Windows build lands in `dist/AI Subscription Usage.exe`.
 
 ## What's verified so far
 
@@ -106,7 +112,7 @@ The desktop app is a long-running menu-bar/tray process. Make sure nothing else 
 
 ## Multiple languages
 
-The desktop shell ships with Simplified Chinese, English, Japanese, Korean, French, German, and Spanish resources. It follows the OS language by default and can be switched from the settings page. No calculated field or pricing data changes with language.
+The desktop shell ships with English, French, German, Spanish, Simplified Chinese, Japanese, and Korean resources. It follows the OS language by default and can be switched from the settings page. No calculated field or pricing data changes with language.
 
 ## Pricing database updates
 

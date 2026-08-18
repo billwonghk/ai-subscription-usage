@@ -1,6 +1,6 @@
 # AI Subscription Usage
 
-[English](README.md) | **简体中文**
+[English](README.md) | **简体中文** | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
 一个本地运行、不用注册账号的菜单栏/系统托盘应用，读取本机 ChatGPT、Claude Code、Claude Desktop、Gemini CLI 和 Grok 的用量记录，把最近 30 天的 API 等价价值和你实际付的订阅费做对比。所有计算都在你自己的电脑上完成——不需要 AI API Key，不需要账号登录，不读取 OAuth/Auth Token/Cookie，也不经过任何云端服务。
 
@@ -27,7 +27,13 @@
 
 **获取方式**
 
-目前还没有打标签发布正式版本，所以 [Releases](../../releases) 页面还没有现成的安装包。在这之前，可以自己编译：
+去 [Releases](../../releases) 页面下载最新版本：
+- **macOS**：`AI-Subscription-Usage-macOS.zip`——解压后把 `AI Subscription Usage.app` 拖进"应用程序"文件夹。
+- **Windows**：`AI-Subscription-Usage-Windows-Setup.exe` 是正常安装包（开始菜单快捷方式、能正常卸载）；如果不想往系统里装东西，也可以下 `AI-Subscription-Usage-Windows-Portable.zip`，解压后直接双击里面的 exe 运行。
+
+每次发布都附带一个 `SHA256SUMS.txt`，可以用来校验下载文件没被篡改。Windows 版本在 CI 里编译并自测过，但还没有在真实 Windows 电脑上手动测试过，见下面表格。
+
+想自己编译源码也可以：
 
 ```bash
 python3 -m venv .venv-desktop
@@ -36,7 +42,7 @@ python3 -m venv .venv-desktop
 .venv-desktop/bin/pyinstaller --clean --noconfirm ai-subscription-usage.spec
 ```
 
-macOS 编译结果在 `dist/AI Subscription Usage.app`；Windows 编译结果（在 CI 里编译并自测过，还没有在真实 Windows 电脑上手动测试——见下面表格）在 `dist/AI Subscription Usage.exe`。
+macOS 编译结果在 `dist/AI Subscription Usage.app`；Windows 编译结果在 `dist/AI Subscription Usage.exe`。
 
 ## 各平台验证情况
 

@@ -120,7 +120,8 @@ def render_help(
 
     tier_rows = ""
     for tier_key, tier_label in (("flash", "Flash"), ("pro", "Pro")):
-        rate = models.get(f"deepseek-v4-{tier_key}")
+        raw_rate = models.get(f"deepseek-v4-{tier_key}")
+        rate = current_rate(raw_rate) if isinstance(raw_rate, dict) else None
         if not isinstance(rate, dict):
             continue
         tier_rows += f"<tr><td>DeepSeek V4 {tier_label}</td><td>${rate.get('input_per_million', '—')}</td><td>${rate.get('cached_input_per_million', '—')}</td><td>${rate.get('output_per_million', '—')}</td></tr>"

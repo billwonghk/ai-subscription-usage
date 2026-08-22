@@ -184,7 +184,7 @@ class DesktopApp:
                 except Exception:
                     auto_updated_version = None
             REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-            base_report = ai_usage_report.render_dashboard(usages, 30, source_files, pricing, app_version=APP_VERSION)
+            base_report = ai_usage_report.render_dashboard(usages, 30, source_files, pricing, app_version=APP_VERSION, deepseek_tiers=load_deepseek_tiers())
             BASE_REPORT_PATH.write_text(base_report, encoding="utf-8")
             REPORT_PATH.write_text(localize_html(base_report, self.settings["language"]), encoding="utf-8")
             write_help_page(self.settings["language"])

@@ -43,6 +43,8 @@ EXTRA_TRANSLATIONS = {
         "缓存命中率": "Cache hit rate", "对应 DeepSeek 成本": "Est. DeepSeek cost", "对应 DeepSeek": "DeepSeek cost",
         "对应 DeepSeek V4 Pro": "Compared to DeepSeek V4 Pro", "对应 DeepSeek V4 Flash": "Compared to DeepSeek V4 Flash",
         "以 DeepSeek 定价核算的成本，缓存命中率已计入": "Cost estimated using DeepSeek's pricing; cache-hit rate already factored in",
+        "各平台已计价模型的 DeepSeek 参考成本合计。": "Sum of DeepSeek reference costs for priced models across providers.",
+        "无法确认具体模型的记录保留 Token，但不参与价格计算；所示金额为已确认模型的保守估算。": "Records without an identifiable model remain in Token totals but are excluded from pricing. Displayed costs are conservative estimates based on confirmed models.",
     },
     "ja": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "サービスごとに個別のプラン履歴を保存します。月額プランは30日、年額プランは360日で日割りし、適用日前の費用は計算しません。",
@@ -54,6 +56,8 @@ EXTRA_TRANSLATIONS = {
         "缓存命中率": "キャッシュ命中率", "对应 DeepSeek 成本": "DeepSeek概算コスト", "对应 DeepSeek": "DeepSeekコスト",
         "对应 DeepSeek V4 Pro": "DeepSeek V4 Pro と比較", "对应 DeepSeek V4 Flash": "DeepSeek V4 Flash と比較",
         "以 DeepSeek 定价核算的成本，缓存命中率已计入": "DeepSeek の価格で算出した概算コスト。キャッシュ命中率は計算済みです",
+        "各平台已计价模型的 DeepSeek 参考成本合计。": "各サービスの価格が確認済みのモデルについて算出した DeepSeek 参考コストの合計です。",
+        "无法确认具体模型的记录保留 Token，但不参与价格计算；所示金额为已确认模型的保守估算。": "モデルを特定できない記録も Token 合計には残りますが、価格計算には含まれません。表示金額は特定できたモデルのみに基づく控えめな見積もりです。",
     },
     "ko": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "서비스별 요금제 이력을 저장합니다. 월간 요금제는 30일, 연간 요금제는 360일로 배분하며 적용일 전에는 구독 비용을 계산하지 않습니다.",
@@ -65,6 +69,8 @@ EXTRA_TRANSLATIONS = {
         "缓存命中率": "캐시 명중률", "对应 DeepSeek 成本": "DeepSeek 예상 비용", "对应 DeepSeek": "DeepSeek 비용",
         "对应 DeepSeek V4 Pro": "DeepSeek V4 Pro와 비교", "对应 DeepSeek V4 Flash": "DeepSeek V4 Flash와 비교",
         "以 DeepSeek 定价核算的成本，缓存命中率已计入": "DeepSeek 가격으로 산출한 예상 비용입니다. 캐시 명중률은 이미 반영되었습니다",
+        "各平台已计价模型的 DeepSeek 参考成本合计。": "각 서비스에서 가격이 확인된 모델의 DeepSeek 참고 비용 합계입니다.",
+        "无法确认具体模型的记录保留 Token，但不参与价格计算；所示金额为已确认模型的保守估算。": "모델을 확인할 수 없는 기록도 Token 합계에는 포함되지만 가격 계산에는 포함되지 않습니다. 표시된 금액은 확인된 모델만을 기준으로 한 보수적인 추정치입니다.",
     },
     "fr": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "Chaque fournisseur conserve son propre historique. Les abonnements mensuels sont répartis sur 30 jours et les annuels sur 360 jours ; aucun coût n’est calculé avant la date d’effet.",
@@ -76,6 +82,8 @@ EXTRA_TRANSLATIONS = {
         "缓存命中率": "Taux de succès du cache", "对应 DeepSeek 成本": "Coût DeepSeek estimé", "对应 DeepSeek": "Coût DeepSeek",
         "对应 DeepSeek V4 Pro": "Comparé à DeepSeek V4 Pro", "对应 DeepSeek V4 Flash": "Comparé à DeepSeek V4 Flash",
         "以 DeepSeek 定价核算的成本，缓存命中率已计入": "Coût estimé avec les tarifs de DeepSeek ; le taux de succès du cache est déjà pris en compte",
+        "各平台已计价模型的 DeepSeek 参考成本合计。": "Somme des coûts de référence DeepSeek pour les modèles tarifés, tous fournisseurs confondus.",
+        "无法确认具体模型的记录保留 Token，但不参与价格计算；所示金额为已确认模型的保守估算。": "Les enregistrements sans modèle identifiable restent comptés dans les Token totaux mais sont exclus du calcul des coûts. Les montants affichés sont des estimations prudentes basées sur les modèles confirmés.",
     },
     "de": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "Für jeden Anbieter wird ein eigener Planverlauf gespeichert. Monatspläne werden auf 30 Tage und Jahrespläne auf 360 Tage verteilt; vor dem Gültigkeitsdatum werden keine Kosten berechnet.",
@@ -87,6 +95,8 @@ EXTRA_TRANSLATIONS = {
         "缓存命中率": "Cache-Trefferquote", "对应 DeepSeek 成本": "Geschätzte DeepSeek-Kosten", "对应 DeepSeek": "DeepSeek-Kosten",
         "对应 DeepSeek V4 Pro": "Verglichen mit DeepSeek V4 Pro", "对应 DeepSeek V4 Flash": "Verglichen mit DeepSeek V4 Flash",
         "以 DeepSeek 定价核算的成本，缓存命中率已计入": "Geschätzte Kosten anhand der DeepSeek-Preise; die Cache-Trefferquote ist bereits berücksichtigt",
+        "各平台已计价模型的 DeepSeek 参考成本合计。": "Summe der DeepSeek-Referenzkosten für bepreiste Modelle über alle Anbieter hinweg.",
+        "无法确认具体模型的记录保留 Token，但不参与价格计算；所示金额为已确认模型的保守估算。": "Datensätze ohne erkennbares Modell bleiben in der Token-Gesamtsumme enthalten, fließen aber nicht in die Preisberechnung ein. Die angezeigten Beträge sind vorsichtige Schätzungen auf Basis bestätigter Modelle.",
     },
     "es": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "Cada proveedor conserva su propio historial. Los planes mensuales se reparten en 30 días y los anuales en 360 días; no se calcula coste antes de la fecha de vigencia.",
@@ -98,6 +108,8 @@ EXTRA_TRANSLATIONS = {
         "缓存命中率": "Tasa de aciertos de caché", "对应 DeepSeek 成本": "Coste estimado en DeepSeek", "对应 DeepSeek": "Coste DeepSeek",
         "对应 DeepSeek V4 Pro": "Comparado con DeepSeek V4 Pro", "对应 DeepSeek V4 Flash": "Comparado con DeepSeek V4 Flash",
         "以 DeepSeek 定价核算的成本，缓存命中率已计入": "Coste estimado con los precios de DeepSeek; la tasa de aciertos de caché ya está incluida",
+        "各平台已计价模型的 DeepSeek 参考成本合计。": "Suma de los costes de referencia de DeepSeek de los modelos con precio, en todos los proveedores.",
+        "无法确认具体模型的记录保留 Token，但不参与价格计算；所示金额为已确认模型的保守估算。": "Los registros sin un modelo identificable permanecen en los totales de Token, pero se excluyen del cálculo de precios. Los importes mostrados son estimaciones conservadoras basadas en modelos confirmados.",
     },
 }
 

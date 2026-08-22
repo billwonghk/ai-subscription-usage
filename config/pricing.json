@@ -8,8 +8,8 @@
     "OpenRouter (auto-refreshed models)": "https://openrouter.ai/api/v1/models"
   },
   "schema_version": 2,
-  "price_version": "2026-08-21.openrouter",
-  "updated_at": "2026-08-21T00:00:00Z",
+  "price_version": "2026-08-22.openrouter",
+  "updated_at": "2026-08-22T00:00:00Z",
   "models": {
     "gpt-5.6-sol": {
       "periods": [
@@ -240,18 +240,42 @@
       "updated_at": "2026-08-21"
     },
     "deepseek-v4-flash": {
-      "input_per_million": 0.07966,
-      "cached_input_per_million": 0.015932,
-      "output_per_million": 0.15932,
+      "periods": [
+        {
+          "input_per_million": 0.07966,
+          "cached_input_per_million": 0.015932,
+          "output_per_million": 0.15932,
+          "start_date": "2000-01-01",
+          "end_date": "2026-08-21"
+        },
+        {
+          "input_per_million": 0.06146,
+          "cached_input_per_million": 0.012292,
+          "output_per_million": 0.12292,
+          "start_date": "2026-08-22"
+        }
+      ],
       "source": "openrouter",
-      "updated_at": "2026-08-21"
+      "updated_at": "2026-08-22"
     },
     "deepseek-v4-pro": {
-      "input_per_million": 1.6,
-      "cached_input_per_million": 0.135,
-      "output_per_million": 3.2,
+      "periods": [
+        {
+          "input_per_million": 1.6,
+          "cached_input_per_million": 0.135,
+          "output_per_million": 3.2,
+          "start_date": "2000-01-01",
+          "end_date": "2026-08-21"
+        },
+        {
+          "input_per_million": 0.413772,
+          "cached_input_per_million": 0.034481,
+          "output_per_million": 0.827544,
+          "start_date": "2026-08-22"
+        }
+      ],
       "source": "openrouter",
-      "updated_at": "2026-08-21"
+      "updated_at": "2026-08-22"
     }
   },
   "notes": [

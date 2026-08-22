@@ -20,10 +20,14 @@
 | --- | --- |
 | ![报表首页](assets/screenshots/report.png) | ![设置页面](assets/screenshots/settings.png) |
 
-各平台明细（按模型拆分的 Token 和价值），以及中文版报表：
+各平台明细——包含真实的缓存命中率，以及同样这批用量如果换成 DeepSeek 大概要花多少钱（按实测能力对应档位，不是按价格或产品名字），以及中文版报表：
 
-![Claude 平台明细](assets/screenshots/report-claude-tab.png)
+![Claude 平台明细，含缓存命中率和 DeepSeek 对比成本](assets/screenshots/report-claude-tab.png)
 ![中文版报表](assets/screenshots/report-zh.png)
+
+DeepSeek 对比用的方法和完整的模型对应关系表，都写在软件自带的"配置及使用说明"页面里：
+
+![DeepSeek 对比方法和模型对应关系表](assets/screenshots/deepseek-methodology-zh.png)
 
 **获取方式**
 

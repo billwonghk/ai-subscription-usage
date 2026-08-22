@@ -20,10 +20,14 @@ A local, no-account menu-bar / system-tray app that reads on-device usage logs f
 | --- | --- |
 | ![Report dashboard](assets/screenshots/report.png) | ![Settings panel](assets/screenshots/settings.png) |
 
-Per-provider detail (per-model tokens and value), and the same report in Chinese:
+Per-provider detail — including a real cache-hit rate and an estimated cost for the same usage on DeepSeek, matched by measured capability, not price or product name — and the same report in Chinese:
 
-![Claude provider detail](assets/screenshots/report-claude-tab.png)
+![Claude provider detail with cache-hit rate and DeepSeek cost](assets/screenshots/report-claude-tab.png)
 ![Report in Chinese](assets/screenshots/report-zh.png)
+
+The DeepSeek comparison and its full model-to-tier mapping are documented on the in-app configuration guide:
+
+![DeepSeek comparison methodology and model mapping table](assets/screenshots/deepseek-methodology-en.png)
 
 **Getting it**
 

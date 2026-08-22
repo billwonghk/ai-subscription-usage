@@ -73,6 +73,18 @@ def load_runtime_pricing() -> dict:
     return pricing
 
 
+def load_deepseek_tiers() -> dict[str, str]:
+    try:
+        raw = json.loads((RESOURCE_ROOT / "config" / "deepseek_tier_map.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return {key: value for key, value in raw.items() if not key.startswith("_")}
+
+
+def write_help_page(language: str) -> None:
+    write_help(HELP_PATH, language, APP_VERSION, load_runtime_pricing(), load_deepseek_tiers())
+
+
 def save_subscription_plan(plan: dict) -> list[dict]:
     provider, cycle = plan.get("provider"), plan.get("cycle")
     start_date, amount = plan.get("start_date"), plan.get("amount")
@@ -175,7 +187,7 @@ class DesktopApp:
             base_report = ai_usage_report.render_dashboard(usages, 30, source_files, pricing, app_version=APP_VERSION)
             BASE_REPORT_PATH.write_text(base_report, encoding="utf-8")
             REPORT_PATH.write_text(localize_html(base_report, self.settings["language"]), encoding="utf-8")
-            write_help(HELP_PATH, self.settings["language"], APP_VERSION)
+            write_help_page(self.settings["language"])
             if auto_updated_version:
                 notify(self.messages["app_name"], self.messages["auto_price_update_message"].format(model=", ".join(newly_found), version=auto_updated_version))
             if unknown:
@@ -225,7 +237,7 @@ class DesktopApp:
             REPORT_PATH.write_text(localize_html(BASE_REPORT_PATH.read_text(encoding="utf-8"), language), encoding="utf-8")
         else:
             self.refresh()
-        write_help(HELP_PATH, language, APP_VERSION)
+        write_help_page(language)
 
     def _refresh_icon_menu(self) -> None:
         self.icon.title = self.messages["app_name"]
@@ -260,7 +272,7 @@ class DesktopApp:
         webbrowser.open(REPORT_PATH.as_uri())
 
     def open_help(self) -> None:
-        write_help(HELP_PATH, self.settings["language"], APP_VERSION)
+        write_help_page(self.settings["language"])
         webbrowser.open(f"http://127.0.0.1:{LOCAL_PORT}/help")
 
     def open_settings(self) -> None:
@@ -285,7 +297,7 @@ class DesktopApp:
                     self.wfile.write(body)
                     return
                 if self.path.startswith("/help"):
-                    write_help(HELP_PATH, app.settings["language"], APP_VERSION)
+                    write_help_page(app.settings["language"])
                     body = HELP_PATH.read_bytes()
                     self.send_response(200)
                     self._cors()

@@ -141,7 +141,13 @@ def render_help(
     return f'''<!doctype html><html lang="{html.escape(language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{FAVICON_TAG}<title>{html.escape(t['title'])}</title><style>{style}</style></head><body><main><h1>{LOGO_IMG}{html.escape(t['title'])}</h1><p>{html.escape(t['intro'])} · Ver {html.escape(app_version)}</p>{sections}{model_pricing_section}{deepseek_section}<section><h2>{html.escape(t['commands'])}</h2><pre>{html.escape(COMMANDS)}</pre></section><section><h2>{html.escape(t['detection'])}</h2><p>{html.escape(t['detection_note'])}</p><table><thead><tr><th>{html.escape(t['provider'])}</th><th>{html.escape(t['surface'])}</th><th>{html.escape(t['status'])}</th><th>{html.escape(t['files'])}</th></tr></thead><tbody>{rows}</tbody></table></section><section><h2>{html.escape(t['prompt'])}</h2><pre class="prompt">{html.escape(AI_PROMPT)}</pre></section></main><script>{script}</script></body></html>'''
 
 
-def write_help(path: Path, language: str, app_version: str = "development") -> Path:
+def write_help(
+    path: Path,
+    language: str,
+    app_version: str = "development",
+    pricing: dict | None = None,
+    deepseek_tiers: dict[str, str] | None = None,
+) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render_help(language, app_version), encoding="utf-8")
+    path.write_text(render_help(language, app_version, pricing, deepseek_tiers), encoding="utf-8")
     return path

@@ -33,7 +33,7 @@ TEXT = {
     "es": {**EN, "title": "Uso de suscripciones de IA: configuración", "language": "Idioma", "autostart": "Iniciar al iniciar sesión", "telemetry": "Enviar diagnósticos anónimos", "refresh_interval": "Intervalo de actualización", "open_data_folder": "Abrir carpeta de datos", "clear_diagnostics": "Borrar registros de diagnóstico", "diagnostics_cleared": "Registros de diagnóstico borrados", "report_issue": "Informar un problema", "hours_suffix": "horas", "on": "Activado", "off": "Desactivado", "app_not_running": "La aplicación local no está activa"},
 }
 
-LANGUAGE_NAMES = {"zh-CN": "中文", "en": "English", "ja": "日本語", "ko": "한국어", "fr": "Français", "de": "Deutsch", "es": "Español"}
+LANGUAGE_NAMES = {"en": "English", "zh-CN": "中文", "ja": "日本語", "ko": "한국어", "fr": "Français", "de": "Deutsch", "es": "Español"}
 REFRESH_HOURS_CHOICES = (6, 12, 24)
 ISSUE_TRACKER_URL = "https://github.com/billwonghk/ai-subscription-usage/issues/new"
 

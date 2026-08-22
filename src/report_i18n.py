@@ -25,6 +25,7 @@ TRANSLATIONS = {
 }
 
 DAYS_FORMAT = {"en": "Last {days} days", "ja": "直近{days}日", "ko": "최근 {days}일", "fr": "Derniers {days} jours", "de": "Letzte {days} Tage", "es": "Últimos {days} días"}
+GENERATED_FORMAT = {"en": "Generated locally · {time}", "ja": "ローカルで生成 · {time}", "ko": "로컬에서 생성 · {time}", "fr": "Généré localement · {time}", "de": "Lokal erzeugt · {time}", "es": "Generado localmente · {time}"}
 HELP_LINKS = {"en": "Configuration and user guide", "ja": "設定・使用ガイド", "ko": "구성 및 사용 안내", "fr": "Configuration et guide", "de": "Konfiguration und Anleitung", "es": "Configuración y guía"}
 
 EXTRA_TRANSLATIONS = {
@@ -35,50 +36,68 @@ EXTRA_TRANSLATIONS = {
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "Daily API-equivalent value divided by daily subscription cost. No multiple is calculated when a model has no public price or no plan is active.",
         "输入订阅金额": "Enter subscription amount", "不计算订阅成本与倍数": "Subscription cost and multiple are not calculated",
         "无生效计划": "No active plan", "模型未计价": "Model is unpriced", "日成本": "Daily cost",
-        "（无数据）": " (no data)", "（估算）": " (estimated)",
+        "（无数据）": " (no data)", "（估算）": " (estimated)", "（今日）": " (Today)",
         "更新完成，正在打开本机报表": "Update complete; opening local report", "每个平台": "Each provider", "当天": "Daily",
         "各平台每日 Token 折线图": "Daily Token chart by provider", "各平台每日订阅价值倍数折线图": "Daily subscription value multiple chart by provider",
         "同区间价值倍数": "value multiple for the same period", "<th>输入</th>": "<th>Input</th>", "<th>输出</th>": "<th>Output</th>", "'年'": "'year'", "'月'": "'month'", " 条": " plans",
+        "缓存命中率": "Cache hit rate", "对应 DeepSeek 成本": "Est. DeepSeek cost", "对应 DeepSeek": "DeepSeek cost",
+        "对应 DeepSeek V4 Pro": "Compared to DeepSeek V4 Pro", "对应 DeepSeek V4 Flash": "Compared to DeepSeek V4 Flash",
+        "以 DeepSeek 定价核算的成本，缓存命中率已计入": "Cost estimated using DeepSeek's pricing; cache-hit rate already factored in",
     },
     "ja": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "サービスごとに個別のプラン履歴を保存します。月額プランは30日、年額プランは360日で日割りし、適用日前の費用は計算しません。",
         "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "この期間中、実際にその日ごとに有効だったサブスクリプション価格で計算しています。途中で価格が変わった場合、新旧の価格が混ざった結果になります。",
         "各平台当天输入、输出和缓存口径合并后的 Token。": "各サービスの入力、出力、キャッシュ入力を合算した日別Tokenです。",
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "日別API相当額を日別サブスクリプション費用で割った値です。公開価格または有効なプランがない日は倍率を計算しません。",
-        "输入订阅金额": "料金を入力", "不计算订阅成本与倍数": "費用と倍率は計算されません", "无生效计划": "有効なプランなし", "模型未计价": "モデル価格なし", "日成本": "日別費用", "（无数据）": "（データなし）", "（估算）": "（推定）", "更新完成，正在打开本机报表": "更新完了、ローカルレポートを開いています",
+        "输入订阅金额": "料金を入力", "不计算订阅成本与倍数": "費用と倍率は計算されません", "无生效计划": "有効なプランなし", "模型未计价": "モデル価格なし", "日成本": "日別費用", "（无数据）": "（データなし）", "（估算）": "（推定）", "（今日）": "（本日）", "更新完成，正在打开本机报表": "更新完了、ローカルレポートを開いています",
         "各平台每日 Token 折线图": "サービス別日別Token折れ線グラフ", "各平台每日订阅价值倍数折线图": "サービス別日別サブスクリプション価値倍率グラフ", "同区间价值倍数": "同期間の価値倍率", "<th>输入</th>": "<th>入力</th>", "<th>输出</th>": "<th>出力</th>", "'年'": "'年'", "'月'": "'月'", " 条": "件",
+        "缓存命中率": "キャッシュ命中率", "对应 DeepSeek 成本": "DeepSeek概算コスト", "对应 DeepSeek": "DeepSeekコスト",
+        "对应 DeepSeek V4 Pro": "DeepSeek V4 Pro と比較", "对应 DeepSeek V4 Flash": "DeepSeek V4 Flash と比較",
+        "以 DeepSeek 定价核算的成本，缓存命中率已计入": "DeepSeek の価格で算出した概算コスト。キャッシュ命中率は計算済みです",
     },
     "ko": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "서비스별 요금제 이력을 저장합니다. 월간 요금제는 30일, 연간 요금제는 360일로 배분하며 적용일 전에는 구독 비용을 계산하지 않습니다.",
         "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "이 기간 동안 매일 실제로 적용된 구독 가격으로 계산합니다. 중간에 구독 가격이 바뀌었다면 신구 가격이 섞인 결과입니다.",
         "各平台当天输入、输出和缓存口径合并后的 Token。": "각 서비스의 입력, 출력, 캐시 입력을 합산한 일별 Token입니다.",
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "일별 API 환산 가치를 일별 구독 비용으로 나눈 값입니다. 공개 가격이나 적용 중인 요금제가 없으면 배수를 계산하지 않습니다.",
-        "输入订阅金额": "구독 금액 입력", "不计算订阅成本与倍数": "구독 비용과 배수를 계산하지 않음", "无生效计划": "적용 중인 요금제 없음", "模型未计价": "모델 가격 없음", "日成本": "일별 비용", "（无数据）": "(데이터 없음)", "（估算）": "(추정)", "更新完成，正在打开本机报表": "업데이트 완료, 로컬 보고서를 여는 중",
+        "输入订阅金额": "구독 금액 입력", "不计算订阅成本与倍数": "구독 비용과 배수를 계산하지 않음", "无生效计划": "적용 중인 요금제 없음", "模型未计价": "모델 가격 없음", "日成本": "일별 비용", "（无数据）": "(데이터 없음)", "（估算）": "(추정)", "（今日）": "(오늘)", "更新完成，正在打开本机报表": "업데이트 완료, 로컬 보고서를 여는 중",
         "各平台每日 Token 折线图": "서비스별 일별 Token 선 그래프", "各平台每日订阅价值倍数折线图": "서비스별 일별 구독 가치 배수 선 그래프", "同区间价值倍数": "동일 기간 가치 배수", "<th>输入</th>": "<th>입력</th>", "<th>输出</th>": "<th>출력</th>", "'年'": "'연'", "'月'": "'월'", " 条": "개",
+        "缓存命中率": "캐시 명중률", "对应 DeepSeek 成本": "DeepSeek 예상 비용", "对应 DeepSeek": "DeepSeek 비용",
+        "对应 DeepSeek V4 Pro": "DeepSeek V4 Pro와 비교", "对应 DeepSeek V4 Flash": "DeepSeek V4 Flash와 비교",
+        "以 DeepSeek 定价核算的成本，缓存命中率已计入": "DeepSeek 가격으로 산출한 예상 비용입니다. 캐시 명중률은 이미 반영되었습니다",
     },
     "fr": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "Chaque fournisseur conserve son propre historique. Les abonnements mensuels sont répartis sur 30 jours et les annuels sur 360 jours ; aucun coût n’est calculé avant la date d’effet.",
         "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "Calculé à partir du tarif d’abonnement réellement en vigueur chaque jour de cette période ; si votre tarif a changé en cours de route, ce montant mélange l’ancien et le nouveau tarif.",
         "各平台当天输入、输出和缓存口径合并后的 Token。": "Les Token quotidiens regroupent les entrées, les sorties et les entrées en cache de chaque fournisseur.",
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "Valeur API quotidienne divisée par le coût quotidien de l’abonnement. Aucun multiple n’est calculé sans tarif public ou abonnement actif.",
-        "输入订阅金额": "Saisir le montant", "不计算订阅成本与倍数": "Coût et multiple non calculés", "无生效计划": "Aucun abonnement actif", "模型未计价": "Modèle non tarifé", "日成本": "Coût quotidien", "（无数据）": " (aucune donnée)", "（估算）": " (estimation)", "更新完成，正在打开本机报表": "Mise à jour terminée ; ouverture du rapport local",
+        "输入订阅金额": "Saisir le montant", "不计算订阅成本与倍数": "Coût et multiple non calculés", "无生效计划": "Aucun abonnement actif", "模型未计价": "Modèle non tarifé", "日成本": "Coût quotidien", "（无数据）": " (aucune donnée)", "（估算）": " (estimation)", "（今日）": " (Aujourd’hui)", "更新完成，正在打开本机报表": "Mise à jour terminée ; ouverture du rapport local",
         "各平台每日 Token 折线图": "Courbe des Token quotidiens par fournisseur", "各平台每日订阅价值倍数折线图": "Courbe du multiple quotidien par fournisseur", "同区间价值倍数": "multiple de valeur sur la même période", "<th>输入</th>": "<th>Entrée</th>", "<th>输出</th>": "<th>Sortie</th>", "'年'": "'an'", "'月'": "'mois'", " 条": " plans",
+        "缓存命中率": "Taux de succès du cache", "对应 DeepSeek 成本": "Coût DeepSeek estimé", "对应 DeepSeek": "Coût DeepSeek",
+        "对应 DeepSeek V4 Pro": "Comparé à DeepSeek V4 Pro", "对应 DeepSeek V4 Flash": "Comparé à DeepSeek V4 Flash",
+        "以 DeepSeek 定价核算的成本，缓存命中率已计入": "Coût estimé avec les tarifs de DeepSeek ; le taux de succès du cache est déjà pris en compte",
     },
     "de": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "Für jeden Anbieter wird ein eigener Planverlauf gespeichert. Monatspläne werden auf 30 Tage und Jahrespläne auf 360 Tage verteilt; vor dem Gültigkeitsdatum werden keine Kosten berechnet.",
         "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "Berechnet anhand des Abopreises, der an jedem einzelnen Tag dieses Zeitraums tatsächlich galt; hat sich Ihr Abopreis zwischenzeitlich geändert, vermischt dieser Wert den alten und den neuen Preis.",
         "各平台当天输入、输出和缓存口径合并后的 Token。": "Die täglichen Token umfassen Eingabe, Ausgabe und Cache-Eingabe jedes Anbieters.",
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "Täglicher API-Gegenwert geteilt durch tägliche Abokosten. Ohne öffentlichen Modellpreis oder aktiven Plan wird kein Faktor berechnet.",
-        "输入订阅金额": "Abobetrag eingeben", "不计算订阅成本与倍数": "Abokosten und Faktor werden nicht berechnet", "无生效计划": "Kein aktiver Plan", "模型未计价": "Modell ohne Preis", "日成本": "Tageskosten", "（无数据）": " (keine Daten)", "（估算）": " (geschätzt)", "更新完成，正在打开本机报表": "Aktualisierung abgeschlossen; lokaler Bericht wird geöffnet",
+        "输入订阅金额": "Abobetrag eingeben", "不计算订阅成本与倍数": "Abokosten und Faktor werden nicht berechnet", "无生效计划": "Kein aktiver Plan", "模型未计价": "Modell ohne Preis", "日成本": "Tageskosten", "（无数据）": " (keine Daten)", "（估算）": " (geschätzt)", "（今日）": " (Heute)", "更新完成，正在打开本机报表": "Aktualisierung abgeschlossen; lokaler Bericht wird geöffnet",
         "各平台每日 Token 折线图": "Tägliches Token-Liniendiagramm nach Anbieter", "各平台每日订阅价值倍数折线图": "Tägliches Wertfaktor-Liniendiagramm nach Anbieter", "同区间价值倍数": "Wertfaktor im selben Zeitraum", "<th>输入</th>": "<th>Eingabe</th>", "<th>输出</th>": "<th>Ausgabe</th>", "'年'": "'Jahr'", "'月'": "'Monat'", " 条": " Pläne",
+        "缓存命中率": "Cache-Trefferquote", "对应 DeepSeek 成本": "Geschätzte DeepSeek-Kosten", "对应 DeepSeek": "DeepSeek-Kosten",
+        "对应 DeepSeek V4 Pro": "Verglichen mit DeepSeek V4 Pro", "对应 DeepSeek V4 Flash": "Verglichen mit DeepSeek V4 Flash",
+        "以 DeepSeek 定价核算的成本，缓存命中率已计入": "Geschätzte Kosten anhand der DeepSeek-Preise; die Cache-Trefferquote ist bereits berücksichtigt",
     },
     "es": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "Cada proveedor conserva su propio historial. Los planes mensuales se reparten en 30 días y los anuales en 360 días; no se calcula coste antes de la fecha de vigencia.",
         "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "Se calcula con el precio de suscripción que estuvo realmente vigente cada día de este periodo; si el precio cambió a mitad de camino, este importe mezcla la tarifa antigua y la nueva.",
         "各平台当天输入、输出和缓存口径合并后的 Token。": "Los Token diarios combinan entrada, salida y entrada en caché de cada proveedor.",
         "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "Valor API diario dividido por el coste diario de suscripción. No se calcula el múltiplo sin precio público o plan activo.",
-        "输入订阅金额": "Introducir importe", "不计算订阅成本与倍数": "No se calculan el coste ni el múltiplo", "无生效计划": "Sin plan activo", "模型未计价": "Modelo sin precio", "日成本": "Coste diario", "（无数据）": " (sin datos)", "（估算）": " (estimado)", "更新完成，正在打开本机报表": "Actualización completa; abriendo el informe local",
+        "输入订阅金额": "Introducir importe", "不计算订阅成本与倍数": "No se calculan el coste ni el múltiplo", "无生效计划": "Sin plan activo", "模型未计价": "Modelo sin precio", "日成本": "Coste diario", "（无数据）": " (sin datos)", "（估算）": " (estimado)", "（今日）": " (Hoy)", "更新完成，正在打开本机报表": "Actualización completa; abriendo el informe local",
         "各平台每日 Token 折线图": "Gráfico de Token diarios por proveedor", "各平台每日订阅价值倍数折线图": "Gráfico del múltiplo diario por proveedor", "同区间价值倍数": "múltiplo de valor del mismo periodo", "<th>输入</th>": "<th>Entrada</th>", "<th>输出</th>": "<th>Salida</th>", "'年'": "'año'", "'月'": "'mes'", " 条": " planes",
+        "缓存命中率": "Tasa de aciertos de caché", "对应 DeepSeek 成本": "Coste estimado en DeepSeek", "对应 DeepSeek": "Coste DeepSeek",
+        "对应 DeepSeek V4 Pro": "Comparado con DeepSeek V4 Pro", "对应 DeepSeek V4 Flash": "Comparado con DeepSeek V4 Flash",
+        "以 DeepSeek 定价核算的成本，缓存命中率已计入": "Coste estimado con los precios de DeepSeek; la tasa de aciertos de caché ya está incluida",
     },
 }
 
@@ -91,6 +110,7 @@ def localize_html(page: str, language: str) -> str:
     for source, target in sorted(EXTRA_TRANSLATIONS[language].items(), key=lambda pair: len(pair[0]), reverse=True):
         translated = translated.replace(source, target)
     translated = re.sub(r"最近 (\d+) 天", lambda match: DAYS_FORMAT[language].format(days=match.group(1)), translated)
+    translated = re.sub(r"生成于本机 · (\d{4}-\d{2}-\d{2} \d{2}:\d{2})", lambda match: GENERATED_FORMAT[language].format(time=match.group(1)), translated)
     pairs = sorted(zip(ZH, TRANSLATIONS[language]), key=lambda pair: len(pair[0]), reverse=True)
     for source, target in pairs:
         if source in {"最近", "天"}:

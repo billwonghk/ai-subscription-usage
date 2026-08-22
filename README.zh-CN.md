@@ -126,6 +126,8 @@ python3 -m venv .venv-desktop
 
 `config/model_id_map.json` 把本项目本机的模型名字对应到 OpenRouter 那边确切的模型 id。`scripts/fetch_pricing.py` 按这张表去抓当前价格，重新生成 `config/pricing.json` 和 `config/pricing-manifest.json`；`.github/workflows/update-pricing.yml` 大约每周自动跑一次，价格真的变了才会提交。价格真的变化时会记成一条新的、带日期的价格区间，这样过去日期的报表还是按当时实际生效的价格算，不会被最新价格覆盖。已经手动写好日期区间的模型，自动流程不会去动它，交给人工维护。本机日志里出现全新的模型名字、对照表里还没有的，会先显示未计价，等 `config/model_id_map.json` 里加上一行才会计价——桌面应用侦测到新模型的那一刻，也会顺便自动尝试抓一次最新价格。
 
+每个平台的详情标签页，还会显示这段时间的缓存命中率，以及"如果这批用量改用 [DeepSeek](https://www.deepseek.com/) 跑，大概多少钱"的估算。每个模型会按能力档位对应到 DeepSeek V4 的 Flash 或 Pro（对应关系见 `config/deepseek_tier_map.json`），价格用的是 DeepSeek 自己的公开价格（同样通过 OpenRouter 自动更新），命中/未命中的比例用的是这段时间真实的缓存数据，不是猜的比例。旗舰型号在 DeepSeek 那边没有真正对得上的档位，也还是按 Pro 来算，故意往 DeepSeek 那边让一步，这样比出来的结果不会显得对 DeepSeek 不公平。
+
 ## 匿名诊断
 
 匿名诊断默认关闭，用户在设置页明确开启后才上传。允许字段只有应用版本、操作系统、语言、错误模块、错误类型、脱敏调用栈和适配器状态。禁止上传对话正文、提示词、回复内容、用户名、本机文件路径、API Key、订阅信息、Token 明细和原始日志。诊断入口发布后写入 `telemetry_endpoint`。

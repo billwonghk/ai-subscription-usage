@@ -137,7 +137,8 @@ class AdapterTests(unittest.TestCase):
         self.assertIn("当天 API 等价价值 ÷ 当天订阅日成本", page)
         self.assertIn("p.start_date<=date", page)
         self.assertNotIn("||same[0]", page)
-        self.assertIn("i%3===0", page)
+        self.assertIn("(DATA.days.length-1-i)%3===0", page)
+        self.assertIn("（今日）", page)
         self.assertIn("focusProvider", page)
         self.assertIn("hit-area", page)
         self.assertIn("summary-api", page)
@@ -148,6 +149,51 @@ class AdapterTests(unittest.TestCase):
         self.assertIn("Ver development", page)
         self.assertNotIn("读取文件</div>", page)
 
+    def test_dashboard_includes_cache_hit_rate_and_deepseek_comparison(self):
+        usages = [report.Usage("Codex", "gpt-test", "2026-08-10", 100, 20, 60, True)]
+        pricing = {"models": {"deepseek-v4-flash": {
+            "input_per_million": 1, "cached_input_per_million": 0.1, "output_per_million": 5,
+        }}, "subscriptions": {}}
+        page = report.render_dashboard(usages, 30, {"Codex": 1}, pricing, deepseek_tiers={"gpt-test": "flash"})
+        self.assertIn('"cache_hit_rate": 0.6', page)
+        self.assertIn('"deepseek_cost": 0.000146', page)
+        self.assertIn("缓存命中率", page)
+        self.assertIn("对应 DeepSeek 成本", page)
+        self.assertIn("对应 DeepSeek", page)  # per-model table column header
+        self.assertIn('"deepseek_tier": "flash"', page)
+
+    def test_model_has_tier_but_no_deepseek_price_shows_unpriced_not_zero(self):
+        # Regression: a model can have a DeepSeek tier mapping while the local pricing
+        # file is stale and lacks the deepseek-v4-* rate. That must show as unpriced
+        # (null / dash in the UI), not silently as a real-looking $0.00.
+        usages = [report.Usage("Codex", "gpt-test", "2026-08-10", 100, 20, 60, True)]
+        pricing = {"models": {}, "subscriptions": {}}
+        page = report.render_dashboard(usages, 30, {"Codex": 1}, pricing, deepseek_tiers={"gpt-test": "flash"})
+        self.assertIn('"deepseek_cost": null', page)
+        self.assertIn('"deepseek_tier": null', page)
+
+
+    def test_cache_hit_stats_handles_subset_and_additive_providers(self):
+        codex_item = report.Usage("Codex", "gpt-test", "2026-08-10", 100, 20, 60, True)
+        claude_item = report.Usage("Claude Code", "claude-test", "2026-08-10", 40, 20, 100, False, cache_write_input_tokens=10)
+        hit, total = report.cache_hit_stats([codex_item, claude_item])
+        # Codex: fresh=100-60=40, hit=60. Claude: fresh=40, hit=100, cache_write=10.
+        self.assertEqual(hit, 160)
+        self.assertEqual(total, 40 + 60 + 40 + 100 + 10)
+
+    def test_deepseek_equivalent_cost_uses_tier_map_and_real_cache_split(self):
+        usage = report.Usage("Codex", "gpt-test", "2026-08-10", 100, 20, 60, True)
+        pricing = {"models": {"deepseek-v4-flash": {
+            "input_per_million": 1, "cached_input_per_million": 0.1, "output_per_million": 5,
+        }}}
+        tiers = {"gpt-test": "flash"}
+        # fresh=40, hit=60, output=20 -> (40*1 + 60*0.1 + 20*5) / 1e6
+        self.assertAlmostEqual(report.deepseek_equivalent_cost(usage, pricing, tiers), (40 + 6 + 100) / 1_000_000)
+
+    def test_deepseek_equivalent_cost_is_none_when_model_not_in_tier_map(self):
+        usage = report.Usage("Codex", "gpt-unmapped", "2026-08-10", 100, 20, 60, True)
+        pricing = {"models": {"deepseek-v4-flash": {"input_per_million": 1, "cached_input_per_million": 0.1, "output_per_million": 5}}}
+        self.assertIsNone(report.deepseek_equivalent_cost(usage, pricing, {}))
 
     def test_non_codex_model_can_use_an_exact_price(self):
         usage = report.Usage("Claude Code", "claude-test", "2026-08-10", 100, 20, 10)

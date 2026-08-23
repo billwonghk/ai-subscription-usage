@@ -6,7 +6,7 @@ Une application de barre de menus / de la zone de notification, locale et sans c
 
 ⭐ Si cet outil vous a aidé à savoir si votre abonnement IA en vaut vraiment la peine, un Star aide d'autres personnes à le trouver.
 
-📺 **Démo vidéo :** YouTube (lien à venir) · Bilibili (lien à venir)
+📺 **Démo vidéo :** [YouTube](https://youtu.be/VXnwn82lOsc) · Bilibili (lien à venir)
 
 **Fonctionnalités**
 - Tableau de bord sur 30 jours : jetons totaux/entrée/sortie, valeur équivalente en API, coût d'abonnement effectif et multiple de valeur, par fournisseur

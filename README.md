@@ -6,7 +6,7 @@ A local, no-account menu-bar / system-tray app that reads on-device usage logs f
 
 ⭐ If this helps you figure out whether your AI subscription is actually worth it, a Star helps other people find it too.
 
-📺 **Watch it in action:** YouTube (link coming soon) · Bilibili (link coming soon)
+📺 **Watch it in action:** [YouTube](https://youtu.be/VXnwn82lOsc) · Bilibili (link coming soon)
 
 **Features**
 - 30-day dashboard: total/input/output tokens, API-equivalent value, effective subscription cost, and value multiple, per provider

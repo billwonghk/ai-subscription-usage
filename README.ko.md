@@ -6,7 +6,7 @@ ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok의 온디바이스 사용
 
 ⭐ 이 도구가 AI 구독이 정말 그만한 가치가 있는지 확인하는 데 도움이 되었다면, Star를 눌러 다른 사람들도 찾을 수 있게 해주세요.
 
-📺 **데모 영상:** [YouTube](https://youtu.be/VXnwn82lOsc) · Bilibili (링크 준비 중)
+📺 **데모 영상:** [YouTube](https://youtu.be/VXnwn82lOsc) · [Bilibili](https://www.bilibili.com/video/BV1kN8h6NEQy/)
 
 **기능**
 - 30일 대시보드: 제공업체별 총/입력/출력 토큰, API 환산 가치, 유효 구독 비용, 가치 배수

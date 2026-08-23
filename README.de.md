@@ -6,7 +6,7 @@ Eine lokale Menüleisten- bzw. System-Tray-App ohne Konto, die lokal gespeichert
 
 ⭐ Wenn dir dieses Tool geholfen hat herauszufinden, ob sich dein KI-Abo wirklich lohnt, hilft ein Star anderen, es zu finden.
 
-📺 **Video-Demo:** [YouTube](https://youtu.be/VXnwn82lOsc) · Bilibili (Link folgt)
+📺 **Video-Demo:** [YouTube](https://youtu.be/VXnwn82lOsc) · [Bilibili](https://www.bilibili.com/video/BV1kN8h6NEQy/)
 
 **Funktionen**
 - 30-Tage-Dashboard: Gesamt-/Eingabe-/Ausgabe-Token, API-Gegenwert, effektive Abokosten und Wertfaktor, pro Anbieter

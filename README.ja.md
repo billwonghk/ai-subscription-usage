@@ -6,7 +6,7 @@ ChatGPT、Claude Code、Claude Desktop、Gemini CLI、Grok のローカル使用
 
 ⭐ 自分のAIサブスクリプションが本当に見合っているかを見極める助けになったなら、Starをつけていただけると、もっと多くの人に届きます。
 
-📺 **デモ動画：** [YouTube](https://youtu.be/VXnwn82lOsc)・Bilibili（リンク準備中）
+📺 **デモ動画：** [YouTube](https://youtu.be/VXnwn82lOsc)・[Bilibili](https://www.bilibili.com/video/BV1kN8h6NEQy/)
 
 **機能**
 - 30日間ダッシュボード：プロバイダーごとの合計/入力/出力トークン、API換算価値、有効サブスクリプションコスト、価値倍率

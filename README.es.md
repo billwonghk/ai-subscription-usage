@@ -6,7 +6,7 @@ Una aplicación de barra de menú / bandeja del sistema, local y sin necesidad d
 
 ⭐ Si esta herramienta te ayudó a saber si tu suscripción de IA realmente vale la pena, una Star ayuda a que otras personas la encuentren.
 
-📺 **Vídeo de demostración:** [YouTube](https://youtu.be/VXnwn82lOsc) · Bilibili (enlace próximamente)
+📺 **Vídeo de demostración:** [YouTube](https://youtu.be/VXnwn82lOsc) · [Bilibili](https://www.bilibili.com/video/BV1kN8h6NEQy/)
 
 **Funciones**
 - Panel de 30 días: tokens totales/de entrada/de salida, valor equivalente en API, coste de suscripción efectivo y múltiplo de valor, por proveedor

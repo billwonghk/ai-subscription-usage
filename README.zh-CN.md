@@ -6,7 +6,7 @@
 
 ⭐ 如果这个工具帮你看清了自己的 AI 订阅到底值不值，点个 Star 能让更多人也看到它。
 
-📺 **视频演示：** [YouTube](https://youtu.be/VXnwn82lOsc) · B 站（链接即将上线）
+📺 **视频演示：** [YouTube](https://youtu.be/VXnwn82lOsc) · [B 站](https://www.bilibili.com/video/BV1kN8h6NEQy/)
 
 **功能**
 - 30 天仪表盘：每个平台的总/输入/输出 Token、API 等价价值、有效订阅成本和价值倍数

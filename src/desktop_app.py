@@ -33,7 +33,7 @@ from source_discovery import configure_source, doctor_report, load_configured_so
 from runtime_data import app_data_root, initialize_user_data, load_subscriptions, save_subscriptions
 
 
-APP_VERSION = "0.4.0"
+APP_VERSION = "0.4.1"
 CONFIG_ROOT = app_data_root()
 RESOURCE_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
 REPORT_PATH = CONFIG_ROOT / "ai-usage-report.html"

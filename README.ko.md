@@ -4,6 +4,10 @@
 
 ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok의 온디바이스 사용 기록을 읽어, 최근 30일간의 API 환산 가치와 실제로 지불한 구독 비용을 비교해 주는 계정 등록 불필요한 메뉴바 / 시스템 트레이 앱입니다. 모든 처리는 사용자 자신의 컴퓨터에서만 이루어집니다 — AI API 키 불필요, 계정 로그인 불필요, OAuth/Auth Token/Cookie 접근 없음, 클라우드 서비스도 전혀 개입하지 않습니다.
 
+⭐ 이 도구가 AI 구독이 정말 그만한 가치가 있는지 확인하는 데 도움이 되었다면, Star를 눌러 다른 사람들도 찾을 수 있게 해주세요.
+
+📺 **데모 영상:** YouTube (링크 준비 중) · Bilibili (링크 준비 중)
+
 **기능**
 - 30일 대시보드: 제공업체별 총/입력/출력 토큰, API 환산 가치, 유효 구독 비용, 가치 배수
 - 일별 토큰 및 가치 배수 차트, 모델별 세부 내역
@@ -24,6 +28,10 @@ ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok의 온디바이스 사용
 
 ![Claude 제공업체 상세](assets/screenshots/report-claude-tab.png)
 ![중국어판 리포트](assets/screenshots/report-zh.png)
+
+DeepSeek 비교와 전체 모델-등급 매핑에 대한 자세한 내용은 앱 내 구성 및 사용 안내에 문서화되어 있습니다:
+
+![DeepSeek 비교 방법론과 모델 매핑 표](assets/screenshots/deepseek-methodology-en.png)
 
 **받는 방법**
 

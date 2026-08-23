@@ -4,6 +4,10 @@
 
 Una aplicación de barra de menú / bandeja del sistema, local y sin necesidad de cuenta, que lee los registros de uso almacenados en tu propio equipo de ChatGPT, Claude Code, Claude Desktop, Gemini CLI y Grok, y compara el valor equivalente en API de los últimos 30 días con lo que realmente pagas por cada suscripción. Todo se ejecuta en tu propio equipo — sin clave de API de IA, sin inicio de sesión de cuenta, sin acceso a OAuth/Auth Token/Cookies, y sin ningún servicio en la nube de por medio.
 
+⭐ Si esta herramienta te ayudó a saber si tu suscripción de IA realmente vale la pena, una Star ayuda a que otras personas la encuentren.
+
+📺 **Vídeo de demostración:** YouTube (enlace próximamente) · Bilibili (enlace próximamente)
+
 **Funciones**
 - Panel de 30 días: tokens totales/de entrada/de salida, valor equivalente en API, coste de suscripción efectivo y múltiplo de valor, por proveedor
 - Gráficos diarios de tokens y múltiplo de valor, desglosados por modelo
@@ -24,6 +28,10 @@ Detalle por proveedor (tokens y valor por modelo), y el mismo informe en chino:
 
 ![Detalle del proveedor Claude](assets/screenshots/report-claude-tab.png)
 ![Informe en chino](assets/screenshots/report-zh.png)
+
+El método de comparación con DeepSeek y su correspondencia completa de modelo a nivel están documentados en la guía de configuración integrada en la app:
+
+![Metodología de comparación con DeepSeek y tabla de correspondencia de modelos](assets/screenshots/deepseek-methodology-en.png)
 
 **Cómo obtenerlo**
 

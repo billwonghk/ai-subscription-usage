@@ -4,6 +4,10 @@
 
 A local, no-account menu-bar / system-tray app that reads on-device usage logs from ChatGPT, Claude Code, Claude Desktop, Gemini CLI, and Grok, then compares 30 days of API-equivalent value against what you actually pay for each subscription. Everything runs on your own machine — no AI API key, no account login, no OAuth/Auth Token/Cookie access, and no cloud service in the loop.
 
+⭐ If this helps you figure out whether your AI subscription is actually worth it, a Star helps other people find it too.
+
+📺 **Watch it in action:** YouTube (link coming soon) · Bilibili (link coming soon)
+
 **Features**
 - 30-day dashboard: total/input/output tokens, API-equivalent value, effective subscription cost, and value multiple, per provider
 - Daily token and value-multiple charts, per-model breakdown

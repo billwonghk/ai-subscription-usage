@@ -4,6 +4,10 @@
 
 ChatGPT、Claude Code、Claude Desktop、Gemini CLI、Grok のローカル使用ログを読み取り、直近30日間の API 換算価値と実際に支払っているサブスクリプション費用を比較する、アカウント登録不要のメニューバー / システムトレイアプリです。すべての処理は自分のマシン上で完結します — AI API キー不要、アカウントログイン不要、OAuth/Auth Token/Cookie へのアクセスもなく、クラウドサービスも一切介在しません。
 
+⭐ 自分のAIサブスクリプションが本当に見合っているかを見極める助けになったなら、Starをつけていただけると、もっと多くの人に届きます。
+
+📺 **デモ動画：** YouTube（リンク準備中）・Bilibili（リンク準備中）
+
 **機能**
 - 30日間ダッシュボード：プロバイダーごとの合計/入力/出力トークン、API換算価値、有効サブスクリプションコスト、価値倍率
 - 日次トークンおよび価値倍率チャート、モデル別内訳
@@ -24,6 +28,10 @@ ChatGPT、Claude Code、Claude Desktop、Gemini CLI、Grok のローカル使用
 
 ![Claude プロバイダー詳細](assets/screenshots/report-claude-tab.png)
 ![中国語版レポート](assets/screenshots/report-zh.png)
+
+DeepSeek 比較とモデル対応表の詳細は、アプリ内の設定・使用ガイドに記載されています：
+
+![DeepSeek 比較方法とモデル対応表](assets/screenshots/deepseek-methodology-en.png)
 
 **入手方法**
 

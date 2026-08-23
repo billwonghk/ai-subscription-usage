@@ -4,6 +4,10 @@
 
 Eine lokale Menüleisten- bzw. System-Tray-App ohne Konto, die lokal gespeicherte Nutzungsprotokolle von ChatGPT, Claude Code, Claude Desktop, Gemini CLI und Grok ausliest und den API-Gegenwert der letzten 30 Tage mit dem tatsächlich gezahlten Abo-Betrag vergleicht. Alles läuft auf dem eigenen Rechner — kein KI-API-Schlüssel, keine Kontoanmeldung, kein Zugriff auf OAuth/Auth Token/Cookies und kein Cloud-Dienst im Spiel.
 
+⭐ Wenn dir dieses Tool geholfen hat herauszufinden, ob sich dein KI-Abo wirklich lohnt, hilft ein Star anderen, es zu finden.
+
+📺 **Video-Demo:** YouTube (Link folgt) · Bilibili (Link folgt)
+
 **Funktionen**
 - 30-Tage-Dashboard: Gesamt-/Eingabe-/Ausgabe-Token, API-Gegenwert, effektive Abokosten und Wertfaktor, pro Anbieter
 - Tägliche Token- und Wertfaktor-Diagramme, Aufschlüsselung nach Modell
@@ -24,6 +28,10 @@ Details pro Anbieter (Token und Wert je Modell) sowie derselbe Bericht auf Chine
 
 ![Claude-Anbieterdetails](assets/screenshots/report-claude-tab.png)
 ![Bericht auf Chinesisch](assets/screenshots/report-zh.png)
+
+Die DeepSeek-Vergleichsmethode und die vollständige Modell-zu-Stufe-Zuordnung sind im integrierten Konfigurationsleitfaden der App dokumentiert:
+
+![DeepSeek-Vergleichsmethodik und Modellzuordnungstabelle](assets/screenshots/deepseek-methodology-en.png)
 
 **Installation**
 

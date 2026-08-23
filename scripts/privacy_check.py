@@ -46,6 +46,16 @@ def main() -> int:
         try:
             content = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
+            # Not UTF-8 text (images, other binaries) - a personal path can still be
+            # embedded in the raw bytes (e.g. a screenshot tool's metadata), so fall
+            # back to a byte-level scan instead of silently skipping the file.
+            try:
+                raw = path.read_bytes()
+            except OSError:
+                continue
+            for marker in PATH_MARKERS:
+                if marker.encode("utf-8") in raw:
+                    violations.append(f"{path.relative_to(ROOT)}: {marker} (binary)")
             continue
         for marker in PATH_MARKERS:
             if marker in content:

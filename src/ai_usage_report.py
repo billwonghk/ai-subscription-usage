@@ -11,11 +11,13 @@ import argparse
 import datetime as dt
 import html
 import json
+import re
 import sqlite3
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
+from zoneinfo import ZoneInfo
 
 import fx_rates
 from favicon import FAVICON_TAG, LOGO_IMG
@@ -48,6 +50,7 @@ class Usage:
     cache_is_subset_of_input: bool = False
     is_estimate: bool = False
     cache_write_input_tokens: int = 0
+    deepseek_rate_band: str = "off_peak"
 
     @property
     def total_tokens(self) -> int:
@@ -69,6 +72,27 @@ def parse_timestamp(value: Any) -> dt.datetime | None:
         return dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
+
+
+def explicit_record_moment(record: dict[str, Any]) -> dt.datetime | None:
+    """Return only a real timestamp from the record, never a file-time fallback."""
+    for key in ("timestamp", "created_at", "time"):
+        parsed = parse_timestamp(record.get(key))
+        if parsed:
+            return parsed
+    return None
+
+
+def deepseek_rate_band(moment: dt.datetime | None) -> str:
+    """Classify DeepSeek's published peak windows in Beijing time; unknown means off-peak."""
+    if moment is None:
+        return "off_peak"
+    if moment.tzinfo is None:
+        moment = moment.astimezone()
+    beijing_time = moment.astimezone(ZoneInfo("Asia/Shanghai")).time()
+    if dt.time(9, 0) <= beijing_time < dt.time(12, 0) or dt.time(14, 0) <= beijing_time < dt.time(18, 0):
+        return "peak"
+    return "off_peak"
 
 
 def iter_json_records(root: Path) -> Iterable[tuple[Path, dict[str, Any]]]:
@@ -173,8 +197,9 @@ def parse_codex(root: Path, since: dt.date) -> tuple[list[Usage], int]:
                     continue
                 if record_day < since:
                     continue
-                key = (date, current_model)
-                usage = usages.setdefault(key, Usage("Codex", current_model, date, cache_is_subset_of_input=True))
+                rate_band = deepseek_rate_band(explicit_record_moment(record))
+                key = (date, current_model, rate_band)
+                usage = usages.setdefault(key, Usage("Codex", current_model, date, cache_is_subset_of_input=True, deepseek_rate_band=rate_band))
                 usage.input_tokens += delta["input_tokens"]
                 usage.output_tokens += delta["output_tokens"]
                 usage.cached_input_tokens += delta["cached_input_tokens"]
@@ -185,7 +210,7 @@ def parse_codex(root: Path, since: dt.date) -> tuple[list[Usage], int]:
 def parse_claude_code(root: Path, since: dt.date) -> tuple[list[Usage], int]:
     """Parse Claude Code's per-response usage entries from local JSONL files."""
     usages: dict[tuple[str, str], Usage] = {}
-    responses: dict[str, tuple[str, str, dict[str, Any]]] = {}
+    responses: dict[str, tuple[str, str, dict[str, Any], str]] = {}
     files_read = 0
     if not root.exists():
         return [], files_read
@@ -223,10 +248,10 @@ def parse_claude_code(root: Path, since: dt.date) -> tuple[list[Usage], int]:
                 response_id = message.get("id") or record.get("uuid")
                 if not isinstance(response_id, str) or not response_id:
                     response_id = f"{path}:{record.get('timestamp', '')}:{len(responses)}"
-                responses[response_id] = (date, model, usage)
-    for date, model, usage in responses.values():
-        key = (date, model)
-        item = usages.setdefault(key, Usage("Claude Code", model, date))
+                responses[response_id] = (date, model, usage, deepseek_rate_band(explicit_record_moment(record)))
+    for date, model, usage, rate_band in responses.values():
+        key = (date, model, rate_band)
+        item = usages.setdefault(key, Usage("Claude Code", model, date, deepseek_rate_band=rate_band))
         item.input_tokens += as_int(usage.get("input_tokens"))
         item.output_tokens += as_int(usage.get("output_tokens"))
         # Claude keeps creation and read cache counters separately.
@@ -264,8 +289,9 @@ def parse_minimax(database: Path, since: dt.date) -> tuple[list[Usage], int]:
             continue
         date = moment.date().isoformat()
         model = model.strip() if isinstance(model, str) and model.strip() else "未记录模型"
-        key = (date, model)
-        item = usages.setdefault(key, Usage("MiniMax", model, date))
+        rate_band = deepseek_rate_band(moment)
+        key = (date, model, rate_band)
+        item = usages.setdefault(key, Usage("MiniMax", model, date, deepseek_rate_band=rate_band))
         item.input_tokens += as_int(input_tokens)
         item.output_tokens += as_int(output_tokens) + as_int(reasoning_tokens)
         item.cached_input_tokens += as_int(cache_read)
@@ -478,12 +504,21 @@ def pricing_model_for_usage(item: Usage, pricing: dict[str, Any]) -> tuple[str, 
     aliases = pricing.get("model_aliases") if isinstance(pricing.get("model_aliases"), dict) else {}
     resolved = aliases.get(item.model, item.model)
     normalized = item.model.strip().lower().replace("_", "-")
-    is_auto = normalized in {"auto", "automatic", "model-auto"} or normalized.endswith("/auto")
+    is_auto = normalized == "automatic" or re.search(r"(^|[-/:])auto($|[-/:])", normalized) is not None
     if not is_auto:
         return str(resolved), False
     fallbacks = pricing.get("auto_fallbacks") if isinstance(pricing.get("auto_fallbacks"), dict) else {}
     fallback = fallbacks.get(item.provider)
-    return (str(fallback), True) if isinstance(fallback, str) and fallback else (item.model, False)
+    if isinstance(fallback, str) and fallback:
+        return str(fallback), True
+    if isinstance(fallback, dict) and isinstance(fallback.get("periods"), list):
+        candidates = [period for period in fallback["periods"] if isinstance(period, dict) and (
+            not item.date or (str(period.get("start_date", "")) <= item.date and (not period.get("end_date") or item.date <= str(period["end_date"])))
+        ) and isinstance(period.get("model"), str) and period["model"]]
+        if candidates:
+            selected = sorted(candidates, key=lambda period: str(period.get("start_date", "")))[-1]
+            return str(selected["model"]), True
+    return item.model, False
 
 
 def api_equivalent_cost(item: Usage, pricing: dict[str, Any]) -> float | None:
@@ -544,8 +579,8 @@ def deepseek_equivalent_cost(item: Usage, pricing: dict[str, Any], tiers: dict[s
     this model's capability class (config/deepseek_tier_map.json), and DeepSeek's own real cache-hit
     vs cache-miss rates are applied to this item's own actual cache-hit/miss token split - not a
     guessed or borrowed ratio."""
-    pricing_model, _ = pricing_model_for_usage(item, pricing)
-    tier = tiers.get(pricing_model)
+    pricing_model, is_auto = pricing_model_for_usage(item, pricing)
+    tier = "flash" if is_auto else tiers.get(pricing_model)
     if tier is None:
         return None
     models = pricing.get("models") if isinstance(pricing.get("models"), dict) else {}
@@ -568,11 +603,17 @@ def deepseek_equivalent_cost(item: Usage, pricing: dict[str, Any], tiers: dict[s
         return None
     fresh_input = max(0, item.input_tokens - item.cached_input_tokens) if item.cache_is_subset_of_input else item.input_tokens
     # DeepSeek has no separate cache-write price; cache-write tokens are billed as fresh (cache-miss) input.
-    return (
+    base_cost = (
         (fresh_input + item.cache_write_input_tokens) * input_rate
         + item.cached_input_tokens * cached_rate
         + item.output_tokens * output_rate
     ) / 1_000_000
+    return base_cost * (2.0 if item.deepseek_rate_band == "peak" else 1.0)
+
+
+def deepseek_tier_for_usage(item: Usage, pricing: dict[str, Any], tiers: dict[str, str]) -> str | None:
+    pricing_model, is_auto = pricing_model_for_usage(item, pricing)
+    return "flash" if is_auto else tiers.get(pricing_model)
 
 
 def money(value: float | None) -> str:
@@ -731,7 +772,7 @@ def render_dashboard(
         for item in sorted(models.values(), key=lambda value: value.total_tokens, reverse=True):
             model_cost = model_costs[item.model] if item.model in priced_models else None
             pricing_model, _ = pricing_model_for_usage(item, pricing)
-            deepseek_tier = deepseek_tiers.get(pricing_model) if item.model in deepseek_priced_models else None
+            deepseek_tier = deepseek_tier_for_usage(item, pricing, deepseek_tiers) if item.model in deepseek_priced_models else None
             model_data.append({
                 "model": item.model,
                 "input": item.input_tokens,

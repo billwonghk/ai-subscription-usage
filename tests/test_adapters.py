@@ -369,6 +369,62 @@ class AdapterTests(unittest.TestCase):
         self.assertIsNone(report.api_equivalent_cost(unknown_usage, pricing))
         self.assertEqual(report.pricing_model_for_usage(auto_usage, pricing), ("gpt-low", True))
 
+    def test_codex_auto_review_uses_date_appropriate_lowest_public_model(self):
+        pricing = {
+            "models": {
+                "gpt-5.4-mini": {"input_per_million": 0.75, "cached_input_per_million": 0.075, "output_per_million": 4.5},
+                "gpt-5.6-luna": {"input_per_million": 0.1, "cached_input_per_million": 0.01, "output_per_million": 0.6},
+            },
+            "auto_fallbacks": {"Codex": {"periods": [
+                {"start_date": "2000-01-01", "end_date": "2026-08-30", "model": "gpt-5.4-mini"},
+                {"start_date": "2026-08-31", "model": "gpt-5.6-luna"},
+            ]}},
+        }
+        before_retirement = report.Usage("Codex", "codex-auto-review", "2026-08-29", input_tokens=1_000_000)
+        after_retirement = report.Usage("Codex", "codex-auto-review", "2026-08-31", input_tokens=1_000_000)
+        self.assertEqual(report.pricing_model_for_usage(before_retirement, pricing), ("gpt-5.4-mini", True))
+        self.assertEqual(report.pricing_model_for_usage(after_retirement, pricing), ("gpt-5.6-luna", True))
+        self.assertEqual(report.api_equivalent_cost(before_retirement, pricing), 0.75)
+        self.assertEqual(report.api_equivalent_cost(after_retirement, pricing), 0.1)
+
+    def test_auto_always_uses_deepseek_flash_and_peak_time_doubles_cost(self):
+        pricing = {
+            "models": {
+                "gpt-pro-fallback": {"input_per_million": 1, "cached_input_per_million": 1, "output_per_million": 1},
+                "deepseek-v4-flash": {"input_per_million": 2, "cached_input_per_million": 1, "output_per_million": 4},
+                "deepseek-v4-pro": {"input_per_million": 20, "cached_input_per_million": 10, "output_per_million": 40},
+            },
+            "auto_fallbacks": {"Codex": "gpt-pro-fallback"},
+        }
+        tiers = {"gpt-pro-fallback": "pro"}
+        off_peak = report.Usage("Codex", "codex-auto-review", "2026-08-29", input_tokens=1_000_000)
+        peak = report.Usage("Codex", "codex-auto-review", "2026-08-29", input_tokens=1_000_000, deepseek_rate_band="peak")
+        self.assertEqual(report.deepseek_tier_for_usage(off_peak, pricing, tiers), "flash")
+        self.assertEqual(report.deepseek_equivalent_cost(off_peak, pricing, tiers), 2.0)
+        self.assertEqual(report.deepseek_equivalent_cost(peak, pricing, tiers), 4.0)
+
+    def test_deepseek_peak_windows_use_beijing_time_and_unknown_is_off_peak(self):
+        self.assertEqual(report.deepseek_rate_band(None), "off_peak")
+        self.assertEqual(report.deepseek_rate_band(dt.datetime(2026, 8, 29, 1, 0, tzinfo=dt.timezone.utc)), "peak")
+        self.assertEqual(report.deepseek_rate_band(dt.datetime(2026, 8, 29, 5, 0, tzinfo=dt.timezone.utc)), "off_peak")
+
+    def test_minimax_current_models_produce_expected_deepseek_tiers_and_costs(self):
+        pricing = {
+            "models": {
+                "minimax/MiniMax-M3": {"input_per_million": 1, "cached_input_per_million": 1, "output_per_million": 1},
+                "minimax/MiniMax-M2.7": {"input_per_million": 1, "cached_input_per_million": 1, "output_per_million": 1},
+                "deepseek-v4-flash": {"input_per_million": 2, "cached_input_per_million": 1, "output_per_million": 4},
+                "deepseek-v4-pro": {"input_per_million": 6, "cached_input_per_million": 3, "output_per_million": 12},
+            },
+        }
+        tiers = {"minimax/MiniMax-M3": "pro", "minimax/MiniMax-M2.7": "flash"}
+        m3 = report.Usage("MiniMax", "minimax/MiniMax-M3", "2026-08-29", input_tokens=1_000_000)
+        m27 = report.Usage("MiniMax", "minimax/MiniMax-M2.7", "2026-08-29", input_tokens=1_000_000)
+        self.assertEqual(report.deepseek_tier_for_usage(m3, pricing, tiers), "pro")
+        self.assertEqual(report.deepseek_tier_for_usage(m27, pricing, tiers), "flash")
+        self.assertEqual(report.deepseek_equivalent_cost(m3, pricing, tiers), 6.0)
+        self.assertEqual(report.deepseek_equivalent_cost(m27, pricing, tiers), 2.0)
+
     def test_latest_confirmed_models_have_deepseek_tiers(self):
         tiers = report.load_deepseek_tier_map(report.DEFAULT_DEEPSEEK_TIER_MAP)
         self.assertEqual(tiers["minimax/MiniMax-M3"], "pro")

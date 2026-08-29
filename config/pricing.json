@@ -44,7 +44,19 @@
     "Qwen3.7-Plus": "qwen/qwen3.7-plus"
   },
   "auto_fallbacks": {
-    "Codex": "gpt-5.6-luna",
+    "Codex": {
+      "periods": [
+        {
+          "start_date": "2000-01-01",
+          "end_date": "2026-08-30",
+          "model": "gpt-5.4-mini"
+        },
+        {
+          "start_date": "2026-08-31",
+          "model": "gpt-5.6-luna"
+        }
+      ]
+    },
     "Claude Code": "claude-haiku-4-5",
     "MiniMax": "minimax/MiniMax-M2.7",
     "Kimi": "moonshotai/kimi-k2.7-code",

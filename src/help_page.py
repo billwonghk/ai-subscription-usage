@@ -26,10 +26,10 @@ def _load_json(path: Path) -> dict:
 EN = {
     "title": "AI Subscription Usage: Configuration and User Guide", "intro": "This tool reads local AI usage records and calculates the last 30 days of API-equivalent value, subscription cost, and value multiple. No AI API is required.",
     "start": "First use", "start_body": "Choose Refresh now. The app checks known local directories and reports missing records, permissions, or unsupported formats.",
-    "sources": "Data sources", "sources_body": "ChatGPT uses internal Codex JSONL; Claude uses Claude JSONL; Gemini CLI uses chat JSON. Antigravity and Grok are detected separately.",
+    "sources": "Data sources", "sources_body": "ChatGPT uses internal Codex JSONL; Claude uses Claude JSONL; Gemini CLI uses chat JSON; MiniMax uses its local token accounting table. Antigravity, Grok, Kimi, GLM, and Alibaba Bailian are detected separately; unverified formats are never presented as usage data.",
     "ai": "Configure with your local AI", "ai_body": "Give the English setup prompt below to a local AI. It may only run read-only diagnostics and validated configuration commands.",
     "security": "Security boundary", "security_body": "OAuth, auth tokens, cookies, Keychain, and conversation content are never read.",
-    "pricing": "Pricing and calculation", "pricing_body": "Regular input, cache reads, cache writes, and output use separate rates. Unknown models remain unpriced. Prices for supported models are refreshed automatically from OpenRouter's public API pricing data. Each provider's detail tab also shows its cache-hit rate and an estimated cost if the same usage ran on DeepSeek, matched by capability tier.",
+    "pricing": "Pricing and calculation", "pricing_body": "Regular input, cache reads, cache writes, and output use separate rates. Unknown named models remain unpriced. Only an explicit Auto model uses the lowest-priced current model in that provider's subscription as an estimate. OpenRouter prices refresh automatically; manually maintained official prices retain their stated source. Each provider detail also shows the corresponding DeepSeek Flash or Pro estimate.",
     "trouble": "Troubleshooting", "trouble_body": "Run the doctor when data is missing. Each source reports an explicit status.",
     "commands": "Diagnostic and configuration commands", "detection": "Current detection", "detection_note": "This table is generated on this computer and stays in the current user's data directory. It is not included in public release packages.",
     "provider": "Provider", "surface": "Surface", "status": "Status", "files": "Record files", "prompt": "Prompt for your local AI", "version": "Version",
@@ -74,6 +74,9 @@ TEXT = {
      "model_pricing":"Precios actuales de los modelos", "model_pricing_body":"Los precios detrás del “valor equivalente en API” de arriba, tomados directamente de la base de datos de precios local — mantenidos al día igual que los precios de DeepSeek de abajo, mediante OpenRouter, aproximadamente una vez por semana.", "price_updated":"Precios actualizados por última vez el"},
 }
 
+TEXT["zh-CN"]["sources_body"] = "ChatGPT 使用内部 Codex JSONL；Claude 使用 Claude JSONL；Gemini CLI 使用聊天 JSON；MiniMax 使用本机 Token 计量表。Antigravity、Grok、Kimi、GLM 和阿里百炼单独检测；未经验证的格式不会显示为用量数据。"
+TEXT["zh-CN"]["pricing_body"] = "普通输入、缓存读取、缓存写入和输出分别计价。未知的具名模型保持未计价；只有日志明确记录为 Auto 时，才按该订阅当前最低价模型估算，并标注为估算。OpenRouter 价格自动更新，人工维护的官方价格保留来源。每个平台详情同时显示对应 DeepSeek Flash 或 Pro 的估算成本。"
+
 AI_PROMPT = "Read the configuration guide for AI Subscription Usage. Run the bundled application with --doctor --json. Do not read OAuth, auth tokens, cookies, Keychain, or conversation content. Do not modify any AI client. If a known source exists outside its default path, use --configure-source with an allowed provider, surface, format, and existing read-only directory. Finish with --verify-sources --json and report only statuses, formats, and file counts."
 COMMANDS = "AI Subscription Usage --doctor --json\nAI Subscription Usage --configure-source --provider PROVIDER --surface SURFACE --format FORMAT --path DIRECTORY\nAI Subscription Usage --verify-sources --json\nAI Subscription Usage --refresh"
 
@@ -95,6 +98,38 @@ def render_help(
 
     models = pricing.get("models") if isinstance(pricing.get("models"), dict) else {}
 
+    def model_group(name: str) -> str:
+        lowered = name.lower()
+        if lowered.startswith("gpt-"):
+            return "ChatGPT"
+        if lowered.startswith("claude-"):
+            return "Claude"
+        if lowered.startswith("gemini-"):
+            return "Gemini"
+        if lowered.startswith("grok-"):
+            return "Grok"
+        if "minimax" in lowered:
+            return "MiniMax"
+        if "kimi" in lowered:
+            return "Kimi"
+        if "glm" in lowered:
+            return "GLM"
+        if "qwen" in lowered:
+            return "Qwen"
+        return "Other"
+
+    def tabbed_tables(prefix: str, grouped_rows: dict[str, list[str]], header: str) -> str:
+        groups = [(name, rows) for name, rows in grouped_rows.items() if rows]
+        buttons = "".join(
+            f'<button class="data-tab{" active" if index == 0 else ""}" data-set="{prefix}" data-group="{html.escape(name)}">{html.escape(name)}</button>'
+            for index, (name, _) in enumerate(groups)
+        )
+        panels = "".join(
+            f'<div class="data-panel{" active" if index == 0 else ""}" data-set="{prefix}" data-group="{html.escape(name)}"><table><thead>{header}</thead><tbody>{"".join(rows)}</tbody></table></div>'
+            for index, (name, rows) in enumerate(groups)
+        )
+        return f'<div class="data-tabs" style="--tab-count:{max(1, len(groups))}">{buttons}</div>{panels}'
+
     def current_rate(rate: dict) -> dict | None:
         periods = rate.get("periods")
         if not isinstance(periods, list):
@@ -105,7 +140,7 @@ def render_help(
             return None
         return sorted(candidates, key=lambda p: str(p.get("start_date", "")))[-1]
 
-    model_price_rows = ""
+    model_price_rows: dict[str, list[str]] = {}
     for name, rate in sorted(models.items()):
         if name.startswith("deepseek-v4-") or not isinstance(rate, dict):
             continue
@@ -113,12 +148,13 @@ def render_help(
         if r is None or "input_per_million" not in r or "output_per_million" not in r:
             continue
         cached = r.get("cached_input_per_million", r["input_per_million"])
-        model_price_rows += f"<tr><td>{html.escape(name)}</td><td>${r['input_per_million']}</td><td>${cached}</td><td>${r['output_per_million']}</td></tr>"
+        model_price_rows.setdefault(model_group(name), []).append(f"<tr><td>{html.escape(name)}</td><td>${r['input_per_million']}</td><td>${cached}</td><td>${r['output_per_million']}</td></tr>")
     updated_at = str(pricing.get("updated_at", ""))[:10]
     price_updated_line = f"<p>{html.escape(t['price_updated'])}: {html.escape(updated_at)}</p>" if updated_at else ""
+    price_header = f"<tr><th>{html.escape(t['deepseek_model_col'])}</th><th>{html.escape(t['deepseek_input_col'])}</th><th>{html.escape(t['deepseek_cached_col'])}</th><th>{html.escape(t['deepseek_output_col'])}</th></tr>"
     model_pricing_section = (
         f"<section><h2>{html.escape(t['model_pricing'])}</h2><p>{html.escape(t['model_pricing_body'])}</p>{price_updated_line}"
-        f"<table><thead><tr><th>{html.escape(t['deepseek_model_col'])}</th><th>{html.escape(t['deepseek_input_col'])}</th><th>{html.escape(t['deepseek_cached_col'])}</th><th>{html.escape(t['deepseek_output_col'])}</th></tr></thead><tbody>{model_price_rows}</tbody></table></section>"
+        f"{tabbed_tables('pricing', model_price_rows, price_header)}</section>"
     )
 
     tier_rows = ""
@@ -128,20 +164,22 @@ def render_help(
         if not isinstance(rate, dict):
             continue
         tier_rows += f"<tr><td>DeepSeek V4 {tier_label}</td><td>${rate.get('input_per_million', '—')}</td><td>${rate.get('cached_input_per_million', '—')}</td><td>${rate.get('output_per_million', '—')}</td></tr>"
-    map_rows = "".join(
-        f"<tr><td>{html.escape(model)}</td><td>DeepSeek V4 {'Pro' if tier == 'pro' else 'Flash'}</td></tr>"
-        for model, tier in sorted(deepseek_tiers.items())
-    )
+    map_rows: dict[str, list[str]] = {}
+    for model, tier in sorted(deepseek_tiers.items()):
+        map_rows.setdefault(model_group(model), []).append(
+            f"<tr><td>{html.escape(model)}</td><td>DeepSeek V4 {'Pro' if tier == 'pro' else 'Flash'}</td></tr>"
+        )
+    mapping_header = f"<tr><th>{html.escape(t['deepseek_model_col'])}</th><th>{html.escape(t['deepseek_tier_col'])}</th></tr>"
     deepseek_section = (
         f"<section><h2>{html.escape(t['deepseek'])}</h2><p>{html.escape(t['deepseek_body'])}</p>"
         f"<h3>{html.escape(t['deepseek_tier_table'])}</h3>"
         f"<table><thead><tr><th>{html.escape(t['deepseek_tier_col'])}</th><th>{html.escape(t['deepseek_input_col'])}</th><th>{html.escape(t['deepseek_cached_col'])}</th><th>{html.escape(t['deepseek_output_col'])}</th></tr></thead><tbody>{tier_rows}</tbody></table>"
         f"<h3>{html.escape(t['deepseek_map_table'])}</h3>"
-        f"<table><thead><tr><th>{html.escape(t['deepseek_model_col'])}</th><th>{html.escape(t['deepseek_tier_col'])}</th></tr></thead><tbody>{map_rows}</tbody></table></section>"
+        f"{tabbed_tables('mapping', map_rows, mapping_header)}</section>"
     )
 
-    style = ':root{color-scheme:dark;--bg:#080d18;--card:#101a2b;--ink:#ecf5ff;--sub:#a8b7ce;--line:#263854}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}main{max-width:1100px;margin:auto;padding:38px 24px 72px}h1{font-size:30px;margin:0 0 10px;display:flex;align-items:center;gap:12px}.brand-logo{width:34px;height:34px;border-radius:8px;flex:none}h2{font-size:19px;margin:0 0 8px}h3{font-size:14px;margin:18px 0 8px;color:var(--ink)}p{color:var(--sub);line-height:1.7}section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:16px}pre{white-space:pre-wrap;background:#07101d;border:1px solid var(--line);padding:16px;border-radius:10px;color:#d8eaff}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-top:1px solid var(--line);text-align:left}th{color:var(--sub)}.prompt{user-select:all}'
-    script = "let v=0;async function sync(){try{let r=await fetch('http://127.0.0.1:17653/state?ts='+Date.now(),{cache:'no-store'});if(!r.ok)return;let s=await r.json();if(v&&s.report_version!==v&&s.language!==document.documentElement.lang)location.replace('http://127.0.0.1:17653/help?ts='+Date.now());v=s.report_version}catch{}}setInterval(sync,1000);sync();"
+    style = ':root{color-scheme:dark;--bg:#080d18;--card:#101a2b;--ink:#ecf5ff;--sub:#a8b7ce;--line:#263854;--accent:#61a8ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}main{max-width:1100px;margin:auto;padding:38px 24px 72px}h1{font-size:30px;margin:0 0 10px;display:flex;align-items:center;gap:12px}.brand-logo{width:34px;height:34px;border-radius:8px;flex:none}h2{font-size:19px;margin:0 0 8px}h3{font-size:14px;margin:18px 0 8px;color:var(--ink)}p{color:var(--sub);line-height:1.7}section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:16px}pre{white-space:pre-wrap;background:#07101d;border:1px solid var(--line);padding:16px;border-radius:10px;color:#d8eaff}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-top:1px solid var(--line);text-align:left}th{color:var(--sub)}.prompt{user-select:all}.data-tabs{display:grid;grid-template-columns:repeat(var(--tab-count),minmax(0,1fr));gap:8px;margin:16px 0 12px;overflow-x:auto}.data-tab{min-width:88px;height:40px;border:1px solid var(--line);border-radius:9px;background:#07101d;color:var(--sub);font:inherit;font-weight:650;cursor:pointer}.data-tab.active{background:var(--accent);border-color:var(--accent);color:#07101d}.data-panel{display:none}.data-panel.active{display:block}'
+    script = "document.querySelectorAll('.data-tab').forEach(b=>b.onclick=()=>{let s=b.dataset.set;document.querySelectorAll('.data-tab[data-set=\"'+s+'\"],.data-panel[data-set=\"'+s+'\"]').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelector('.data-panel[data-set=\"'+s+'\"][data-group=\"'+CSS.escape(b.dataset.group)+'\"]').classList.add('active')});let v=0;async function sync(){try{let r=await fetch('http://127.0.0.1:17653/state?ts='+Date.now(),{cache:'no-store'});if(!r.ok)return;let s=await r.json();if(v&&s.report_version!==v&&s.language!==document.documentElement.lang)location.replace('http://127.0.0.1:17653/help?ts='+Date.now());v=s.report_version}catch{}}setInterval(sync,1000);sync();"
     return f'''<!doctype html><html lang="{html.escape(language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{FAVICON_TAG}<title>{html.escape(t['title'])}</title><style>{style}</style></head><body><main><h1>{LOGO_IMG}{html.escape(t['title'])}</h1><p>{html.escape(t['intro'])} · Ver {html.escape(app_version)}</p>{sections}{model_pricing_section}{deepseek_section}<section><h2>{html.escape(t['commands'])}</h2><pre>{html.escape(COMMANDS)}</pre></section><section><h2>{html.escape(t['detection'])}</h2><p>{html.escape(t['detection_note'])}</p><table><thead><tr><th>{html.escape(t['provider'])}</th><th>{html.escape(t['surface'])}</th><th>{html.escape(t['status'])}</th><th>{html.escape(t['files'])}</th></tr></thead><tbody>{rows}</tbody></table></section><section><h2>{html.escape(t['prompt'])}</h2><pre class="prompt">{html.escape(AI_PROMPT)}</pre></section></main><script>{script}</script></body></html>'''
 
 

@@ -38,6 +38,10 @@ DEFINITIONS = (
     SourceDefinition("gemini", "antigravity-desktop", "antigravity-protobuf", "Antigravity Desktop", ("~/.gemini/antigravity",), ("conversations/*.pb", "conversations/*.db"), "detected-only"),
     SourceDefinition("gemini", "antigravity-cli", "antigravity-cli-session", "Antigravity CLI", ("~/.gemini/antigravity-cli",), ("conversations/*.db", "conversations/*.pb", "conversations/*.trajectory.json"), "detected-only"),
     SourceDefinition("grok", "grok-local", "grok-session", "Grok", ("~/.grok/sessions",), ("**/unified.jsonl", "**/signals.json", "**/chat_history.jsonl"), "exact-or-estimate"),
+    SourceDefinition("minimax", "minimax-agent", "minimax-sqlite", "MiniMax", ("~/.minimax",), ("sqlite.db",), "exact"),
+    SourceDefinition("kimi", "kimi-code", "kimi-wire-jsonl", "Kimi", ("~/.kimi-code/sessions", "~/.kimi/sessions"), ("**/wire.jsonl",), "detected-only"),
+    SourceDefinition("glm", "glm-local", "glm-local-records", "GLM", ("~/.glm", "~/.zhipu"), ("**/*.jsonl", "**/*.db"), "detected-only"),
+    SourceDefinition("bailian", "bailian-local", "bailian-local-records", "阿里百炼", ("~/.bailian", "~/.aliyun"), ("**/*.jsonl", "**/*.db"), "detected-only"),
 )
 
 ALLOWED = {(item.provider, item.surface, item.format): item for item in DEFINITIONS}
@@ -83,6 +87,10 @@ def detect_installed_apps() -> dict[str, bool]:
         "gemini": (applications / "Gemini.app").exists() or (local / "Programs" / "Gemini" / "Gemini.exe").exists(),
         "antigravity": (applications / "Antigravity.app").exists() or (programs / "Antigravity" / "Antigravity.exe").exists(),
         "grok": (user_apps / "Chrome Apps.localized" / "Grok.app").exists() or (applications / "Grok.app").exists() or (local / "Programs" / "Grok" / "Grok.exe").exists(),
+        "minimax": (applications / "MiniMax.app").exists() or (home / ".minimax").exists(),
+        "kimi": (applications / "Kimi.app").exists() or (home / ".kimi-code").exists() or (home / ".kimi").exists(),
+        "glm": (applications / "智谱清言.app").exists() or (home / ".glm").exists() or (home / ".zhipu").exists(),
+        "bailian": (home / ".bailian").exists() or (home / ".aliyun").exists(),
     }
 
 

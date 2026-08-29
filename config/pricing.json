@@ -5,11 +5,52 @@
     "Anthropic pricing list 2026-05-27": "https://www-cdn.anthropic.com/files/4zrzovbb/website/3684c2faafb97418665782cea0001f439f74b1d2.pdf",
     "Anthropic Sonnet 4.6": "https://www.anthropic.com/news/claude-sonnet-4-6",
     "Anthropic current model pricing": "https://platform.claude.com/docs/en/about-claude/pricing",
-    "OpenRouter (auto-refreshed models)": "https://openrouter.ai/api/v1/models"
+    "OpenRouter (auto-refreshed models)": "https://openrouter.ai/api/v1/models",
+    "Alibaba Cloud China Qwen pricing": "https://help.aliyun.com/zh/model-studio/models",
+    "Alibaba Token Plan qwen3.8-max": "https://help.aliyun.com/zh/model-studio/token-plan-personal-overview"
   },
   "schema_version": 2,
-  "price_version": "2026-08-22.openrouter",
-  "updated_at": "2026-08-22T00:00:00Z",
+  "price_version": "2026-08-29.mixed-sources",
+  "updated_at": "2026-08-29T00:00:00Z",
+  "model_aliases": {
+    "MiniMax-M3": "minimax/MiniMax-M3",
+    "minimax-m3": "minimax/MiniMax-M3",
+    "MiniMax-M2.7": "minimax/MiniMax-M2.7",
+    "minimax-m2.7": "minimax/MiniMax-M2.7",
+    "kimi-k3": "moonshotai/kimi-k3",
+    "Kimi-K3": "moonshotai/kimi-k3",
+    "kimi-k3-max": "moonshotai/kimi-k3",
+    "kimi-k3-low": "moonshotai/kimi-k2.7-code",
+    "kimi-k2.7-code": "moonshotai/kimi-k2.7-code",
+    "Kimi-K2.7-Code": "moonshotai/kimi-k2.7-code",
+    "glm-5.3": "z-ai/glm-5.3",
+    "GLM-5.3": "z-ai/glm-5.3",
+    "glm-5.2": "z-ai/glm-5.2",
+    "GLM-5.2": "z-ai/glm-5.2",
+    "glm-5-turbo": "z-ai/glm-5-turbo",
+    "GLM-5-Turbo": "z-ai/glm-5-turbo",
+    "glm-4.7": "z-ai/glm-4.7",
+    "GLM-4.7": "z-ai/glm-4.7",
+    "qwen3.8-max-preview": "qwen3.8-max",
+    "Qwen3.8-Max-Preview": "qwen3.8-max",
+    "qwen/qwen3.8-max-preview": "qwen3.8-max",
+    "qwen/qwen3.8-max": "qwen3.8-max",
+    "Qwen3.8-Max": "qwen3.8-max",
+    "qwen3.8-flash-next": "qwen/qwen3.8-flash",
+    "Qwen3.8-Flash-Next": "qwen/qwen3.8-flash",
+    "qwen3.8-flash": "qwen/qwen3.8-flash",
+    "Qwen3.8-Flash": "qwen/qwen3.8-flash",
+    "qwen3.7-plus": "qwen/qwen3.7-plus",
+    "Qwen3.7-Plus": "qwen/qwen3.7-plus"
+  },
+  "auto_fallbacks": {
+    "Codex": "gpt-5.6-luna",
+    "Claude Code": "claude-haiku-4-5",
+    "MiniMax": "minimax/MiniMax-M2.7",
+    "Kimi": "moonshotai/kimi-k2.7-code",
+    "GLM": "z-ai/glm-4.7",
+    "Bailian": "qwen/qwen3.7-plus"
+  },
   "models": {
     "gpt-5.6-sol": {
       "periods": [
@@ -276,11 +317,95 @@
       ],
       "source": "openrouter",
       "updated_at": "2026-08-22"
+    },
+    "minimax/MiniMax-M3": {
+      "input_per_million": 0.3,
+      "cached_input_per_million": 0.06,
+      "output_per_million": 1.2,
+      "source": "openrouter",
+      "updated_at": "2026-08-27"
+    },
+    "minimax/MiniMax-M2.7": {
+      "input_per_million": 0.3,
+      "cached_input_per_million": 0.06,
+      "output_per_million": 1.2,
+      "source": "openrouter",
+      "updated_at": "2026-08-27"
+    },
+    "moonshotai/kimi-k3": {
+      "input_per_million": 2.55,
+      "cached_input_per_million": 0.256,
+      "output_per_million": 12.75,
+      "source": "openrouter",
+      "updated_at": "2026-08-29"
+    },
+    "moonshotai/kimi-k2.7-code": {
+      "input_per_million": 0.66,
+      "cached_input_per_million": 0.18,
+      "output_per_million": 3.4,
+      "source": "openrouter",
+      "updated_at": "2026-08-29"
+    },
+    "z-ai/glm-5.3": {
+      "input_per_million": 1.4,
+      "cached_input_per_million": 0.26,
+      "output_per_million": 4.4,
+      "source": "openrouter",
+      "updated_at": "2026-08-29"
+    },
+    "z-ai/glm-5.2": {
+      "input_per_million": 0.5,
+      "cached_input_per_million": 0.115,
+      "output_per_million": 3.15,
+      "source": "openrouter",
+      "updated_at": "2026-08-29"
+    },
+    "z-ai/glm-5-turbo": {
+      "input_per_million": 1.2,
+      "cached_input_per_million": 0.24,
+      "output_per_million": 4.0,
+      "source": "openrouter",
+      "updated_at": "2026-08-29"
+    },
+    "z-ai/glm-4.7": {
+      "input_per_million": 0.4,
+      "cached_input_per_million": 0.08,
+      "output_per_million": 1.75,
+      "source": "openrouter",
+      "updated_at": "2026-08-29"
+    },
+    "qwen3.8-max": {
+      "input_per_million": 1.76965,
+      "cached_input_per_million": 0.221206,
+      "output_per_million": 5.308137,
+      "source": "alibaba-cloud-cn",
+      "source_currency": "CNY",
+      "source_input_per_million": 12.0,
+      "source_cached_input_per_million": 1.5,
+      "source_output_per_million": 36.0,
+      "usd_cny_rate": 6.7811,
+      "updated_at": "2026-08-29"
+    },
+    "qwen/qwen3.8-flash": {
+      "input_per_million": 0.16,
+      "cached_input_per_million": 0.016,
+      "cache_write_input_per_million": 0.2,
+      "output_per_million": 0.47,
+      "source": "openrouter",
+      "updated_at": "2026-08-29"
+    },
+    "qwen/qwen3.7-plus": {
+      "input_per_million": 0.32,
+      "cached_input_per_million": 0.064,
+      "cache_write_input_per_million": 0.4,
+      "output_per_million": 1.28,
+      "source": "openrouter",
+      "updated_at": "2026-08-29"
     }
   },
   "notes": [
     "Only models with a public, verified API price are listed.",
-    "Models absent from this file are shown as unpriced; the report does not substitute another model price.",
+    "Models absent from this file are shown as unpriced. A model explicitly recorded as Auto is the only exception: it uses the lowest-priced current model configured for that subscription provider and is marked as an estimate.",
     "Tool-call charges, long-context surcharges, regional charges, and cache-write charges are not recoverable from the current local Codex ledger and are excluded.",
     "Subscription plans are stored separately in each user's application data directory and are never bundled in a public release.",
     "Models tagged \"source\": \"openrouter\" are refreshed automatically about once a week from OpenRouter's public pricing API (scripts/fetch_pricing.py, run by .github/workflows/update-pricing.yml); a genuine price change is recorded as a new dated period so past report dates keep using the rate that was actually in effect then. Models without that tag are maintained by hand."

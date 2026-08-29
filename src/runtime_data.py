@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 
-DATA_SCHEMA_VERSION = 1
+DATA_SCHEMA_VERSION = 2
 
 
 def app_data_root() -> Path:
@@ -58,8 +58,20 @@ def initialize_user_data(resource_root: Path) -> Path:
             subscriptions_path.write_text(json.dumps({"schema_version": 1, "subscriptions": subscriptions}, ensure_ascii=False, indent=2), encoding="utf-8")
             pricing_path.write_text(json.dumps(pricing, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    bundled_pricing_path = resource_root / "config" / "pricing.json"
     if not pricing_path.exists():
-        shutil.copy2(resource_root / "config" / "pricing.json", pricing_path)
+        shutil.copy2(bundled_pricing_path, pricing_path)
+    else:
+        try:
+            runtime_pricing = json.loads(pricing_path.read_text(encoding="utf-8"))
+            bundled_pricing = json.loads(bundled_pricing_path.read_text(encoding="utf-8"))
+            runtime_updated = str(runtime_pricing.get("updated_at", "")) if isinstance(runtime_pricing, dict) else ""
+            bundled_updated = str(bundled_pricing.get("updated_at", "")) if isinstance(bundled_pricing, dict) else ""
+        except (OSError, json.JSONDecodeError):
+            runtime_updated = bundled_updated = ""
+        if bundled_updated and bundled_updated > runtime_updated:
+            _backup(pricing_path, root / "backups" / f"pricing-update-{stamp}")
+            shutil.copy2(bundled_pricing_path, pricing_path)
     schema_path = root / "data-schema.json"
     if not schema_path.exists():
         schema_path.write_text(json.dumps({"schema_version": DATA_SCHEMA_VERSION}, indent=2), encoding="utf-8")
@@ -82,5 +94,5 @@ def save_subscriptions(path: Path, subscriptions: dict) -> None:
         backup.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(path, backup)
     temporary = path.with_suffix(".json.tmp")
-    temporary.write_text(json.dumps({"schema_version": 1, "subscriptions": subscriptions}, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.write_text(json.dumps({"schema_version": 2, "subscriptions": subscriptions}, ensure_ascii=False, indent=2), encoding="utf-8")
     temporary.replace(path)

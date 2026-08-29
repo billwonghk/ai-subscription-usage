@@ -23,5 +23,16 @@
   "gemini-3.7-flash": "pro",
   "grok-4.3": "pro",
   "grok-4.5": "pro",
-  "grok-4.6": "pro"
+  "grok-4.6": "pro",
+  "minimax/MiniMax-M3": "pro",
+  "minimax/MiniMax-M2.7": "flash",
+  "moonshotai/kimi-k3": "pro",
+  "moonshotai/kimi-k2.7-code": "flash",
+  "z-ai/glm-5.3": "pro",
+  "z-ai/glm-5.2": "pro",
+  "z-ai/glm-5-turbo": "flash",
+  "z-ai/glm-4.7": "flash",
+  "qwen3.8-max": "pro",
+  "qwen/qwen3.8-flash": "flash",
+  "qwen/qwen3.7-plus": "flash"
 }

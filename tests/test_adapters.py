@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -7,8 +8,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import ai_usage_report as report
+import fx_rates
 from report_i18n import localize_html
 from help_page import render_help
+from settings_page import render_settings
 from source_discovery import validate_source
 
 
@@ -149,6 +152,89 @@ class AdapterTests(unittest.TestCase):
         self.assertIn("Ver development", page)
         self.assertNotIn("读取文件</div>", page)
 
+    def test_dashboard_only_serializes_enabled_providers(self):
+        usages = [
+            report.Usage("Codex", "gpt-test", "2026-08-10", 100, 20),
+            report.Usage("Claude Code", "claude-test", "2026-08-10", 50, 10),
+        ]
+        page = report.render_dashboard(
+            usages,
+            30,
+            {"Codex": 1, "Claude Code": 1},
+            {"models": {}, "subscriptions": {}},
+            enabled_providers=["Codex"],
+        )
+        self.assertIn('"id": "Codex"', page)
+        self.assertNotIn('"id": "Claude Code"', page)
+        self.assertNotIn("claude-test", page)
+        self.assertIn("gridTemplateColumns", page)
+
+    def test_collect_usages_skips_every_parser_when_no_provider_is_enabled(self):
+        usages, source_files = report.collect_usages(30, enabled_providers=[])
+        self.assertEqual(usages, [])
+        self.assertEqual(source_files, {
+            "Codex": 0, "Claude Code": 0, "Gemini CLI": 0, "Grok Build": 0,
+            "MiniMax": 0, "Kimi": 0, "GLM": 0, "Bailian": 0,
+        })
+
+    def test_minimax_reads_only_accounting_table(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            database = Path(temporary) / "sqlite.db"
+            connection = sqlite3.connect(database)
+            connection.execute(
+                "CREATE TABLE token_usage (model TEXT, ts INTEGER, input_tokens INTEGER, "
+                "output_tokens INTEGER, reasoning_tokens INTEGER, cache_read_tokens INTEGER, "
+                "cache_write_tokens INTEGER, raw TEXT)"
+            )
+            timestamp = int(dt.datetime(2026, 8, 10, 12).timestamp() * 1000)
+            connection.execute(
+                "INSERT INTO token_usage VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                ("minimax/MiniMax-M3", timestamp, 100, 20, 5, 60, 10, "private conversation content"),
+            )
+            connection.commit()
+            connection.close()
+            usages, files_read = report.parse_minimax(database, self.since)
+        self.assertEqual(files_read, 1)
+        self.assertEqual(len(usages), 1)
+        self.assertEqual(usages[0].input_tokens, 100)
+        self.assertEqual(usages[0].output_tokens, 25)
+        self.assertEqual(usages[0].cached_input_tokens, 60)
+        self.assertEqual(usages[0].cache_write_input_tokens, 10)
+        self.assertEqual(usages[0].total_tokens, 195)
+
+    def test_settings_page_lists_provider_controls_and_safe_ai_prompt(self):
+        page = render_settings(
+            "zh-CN",
+            {"refresh_hours": 24, "telemetry_consent": False},
+            False,
+            True,
+            provider_states=[{"id": "Codex", "label": "ChatGPT", "enabled": True, "status": "ready"}],
+            setup_prompt="Do not read OAuth or conversation content.",
+            subscription_plans=[{"provider": "MiniMax", "start_date": "2026-04-23", "amount": 431.0, "currency": "CNY", "cycle": "year"}],
+        )
+        self.assertIn("监控平台", page)
+        self.assertIn('data-action="toggle_provider"', page)
+        self.assertIn("Do not read OAuth or conversation content.", page)
+        self.assertIn("已添加 · 本机记录将纳入统计", page)
+        self.assertIn("sessionStorage.setItem('settingsNotice'", page)
+        self.assertIn("document.execCommand('copy')", page)
+        self.assertIn("订阅计划管理", page)
+        self.assertIn("MiniMax", page)
+        self.assertIn("431.0 CNY / 年", page)
+        self.assertIn('class="danger delete-plan"', page)
+        self.assertIn("delete_plan", page)
+
+        available_page = render_settings(
+            "zh-CN",
+            {"refresh_hours": 24, "telemetry_consent": False},
+            False,
+            True,
+            provider_states=[{"id": "MiniMax", "label": "MiniMax", "enabled": False, "status": "ready"}],
+            setup_prompt="Configure only this provider.",
+        )
+        self.assertIn("已找到本机记录 · 添加后才会纳入统计", available_page)
+        self.assertNotIn("<span class=\"provider-badge\">已添加</span>", available_page)
+
     def test_dashboard_includes_cache_hit_rate_and_deepseek_comparison(self):
         usages = [report.Usage("Codex", "gpt-test", "2026-08-10", 100, 20, 60, True)]
         pricing = {"models": {"deepseek-v4-flash": {
@@ -231,9 +317,65 @@ class AdapterTests(unittest.TestCase):
             "Claude": {"plans": [{"start_date": "2026-03-13", "annual_usd": 215}]},
         }}
         self.assertEqual(report.subscription_plan_data(pricing), [
-            {"provider": "ChatGPT", "start_date": "2026-07-12", "amount": 20.0, "cycle": "month"},
-            {"provider": "Claude", "start_date": "2026-03-13", "amount": 215.0, "cycle": "year"},
+            {"provider": "ChatGPT", "start_date": "2026-07-12", "amount": 20.0, "currency": "USD", "cycle": "month"},
+            {"provider": "Claude", "start_date": "2026-03-13", "amount": 215.0, "currency": "USD", "cycle": "year"},
         ])
+
+    def test_subscription_plans_preserve_original_currency(self):
+        pricing = {"subscriptions": {"MiniMax": {"plans": [{
+            "start_date": "2026-08-29", "amount": 430, "currency": "CNY", "cycle": "month",
+        }]}}}
+        self.assertEqual(report.subscription_plan_data(pricing), [{
+            "provider": "MiniMax", "start_date": "2026-08-29", "amount": 430.0,
+            "currency": "CNY", "cycle": "month",
+        }])
+
+    def test_ecb_cross_rate_and_weekend_carry_forward(self):
+        xml = b'''<Envelope><Cube><Cube time="2026-08-28"><Cube currency="USD" rate="1.20"/><Cube currency="CNY" rate="8.40"/></Cube></Cube></Envelope>'''
+        rates = fx_rates.parse_ecb_xml(xml)
+        self.assertAlmostEqual(rates["2026-08-28"], 7.0)
+        payload = fx_rates.browser_payload({"fetched_at": "2026-08-29T10:00:00-04:00", "rates": rates}, ["2026-08-28", "2026-08-29"])
+        self.assertAlmostEqual(payload["usd_cny_by_date"]["2026-08-29"], 7.0)
+        self.assertEqual(payload["latest_rate_date"], "2026-08-28")
+
+    def test_dashboard_contains_currency_switch_and_daily_fx(self):
+        usage = report.Usage("MiniMax", "minimax/MiniMax-M3", "2026-08-29", input_tokens=1_000_000)
+        pricing = {"models": {"minimax/MiniMax-M3": {"input_per_million": 1, "cached_input_per_million": 1, "output_per_million": 1}}, "subscriptions": {}}
+        page = report.render_dashboard([usage], 1, {"MiniMax": 1}, pricing, enabled_providers=["MiniMax"], display_currency="CNY", fx_cache={"rates": {"2026-08-29": 7.0}})
+        self.assertIn('data-currency="USD"', page)
+        self.assertIn('data-currency="CNY"', page)
+        self.assertIn('"cost_cny": 7.0', page)
+
+    def test_pricing_alias_and_auto_fallback_are_narrow_and_explicit(self):
+        pricing = {
+            "models": {
+                "qwen3.8-max": {
+                    "input_per_million": 1.0, "cached_input_per_million": 0.1,
+                    "output_per_million": 2.0,
+                },
+                "gpt-low": {
+                    "input_per_million": 0.5, "cached_input_per_million": 0.05,
+                    "output_per_million": 1.0,
+                },
+            },
+            "model_aliases": {"Qwen3.8-Max-Preview": "qwen3.8-max"},
+            "auto_fallbacks": {"Codex": "gpt-low"},
+        }
+        alias_usage = report.Usage("Bailian", "Qwen3.8-Max-Preview", "2026-08-29", input_tokens=1_000_000)
+        auto_usage = report.Usage("Codex", "Auto", "2026-08-29", input_tokens=1_000_000)
+        unknown_usage = report.Usage("Codex", "unknown-model", "2026-08-29", input_tokens=1_000_000)
+        self.assertEqual(report.api_equivalent_cost(alias_usage, pricing), 1.0)
+        self.assertEqual(report.api_equivalent_cost(auto_usage, pricing), 0.5)
+        self.assertIsNone(report.api_equivalent_cost(unknown_usage, pricing))
+        self.assertEqual(report.pricing_model_for_usage(auto_usage, pricing), ("gpt-low", True))
+
+    def test_latest_confirmed_models_have_deepseek_tiers(self):
+        tiers = report.load_deepseek_tier_map(report.DEFAULT_DEEPSEEK_TIER_MAP)
+        self.assertEqual(tiers["minimax/MiniMax-M3"], "pro")
+        self.assertEqual(tiers["moonshotai/kimi-k3"], "pro")
+        self.assertEqual(tiers["z-ai/glm-5.3"], "pro")
+        self.assertEqual(tiers["qwen3.8-max"], "pro")
+        self.assertEqual(tiers["qwen/qwen3.8-flash"], "flash")
 
     def test_report_localization_keeps_calculations_and_translates_ui(self):
         page = localize_html('<html lang="zh-CN">最近 30 天 总 Token 更新本机数据</html>', "en")
@@ -272,6 +414,8 @@ class AdapterTests(unittest.TestCase):
             self.assertNotIn("Auth Token</pre>", page)
             self.assertIn("development", page)
         self.assertIn("本机检测结果", render_help("zh-CN"))
+        self.assertIn('data-set="pricing"', render_help("zh-CN"))
+        self.assertIn('data-set="mapping"', render_help("zh-CN"))
         self.assertIn("現在の検出結果", render_help("ja"))
         self.assertIn("현재 감지 결과", render_help("ko"))
         self.assertIn("Détection actuelle", render_help("fr"))

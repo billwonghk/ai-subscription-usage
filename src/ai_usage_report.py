@@ -11,11 +11,13 @@ import argparse
 import datetime as dt
 import html
 import json
+import sqlite3
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
+import fx_rates
 from favicon import FAVICON_TAG, LOGO_IMG
 from report_i18n import localize_html
 from source_discovery import load_configured_sources
@@ -26,6 +28,7 @@ LOCAL_CLAUDE_PROJECTS = Path.home() / ".claude" / "projects"
 LOCAL_GEMINI_HOME = Path.home() / ".gemini"
 LOCAL_GEMINI_SESSIONS = LOCAL_GEMINI_HOME / "tmp"
 LOCAL_GROK_SESSIONS = Path.home() / ".grok" / "sessions"
+LOCAL_MINIMAX_DB = Path.home() / ".minimax" / "sqlite.db"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = PROJECT_ROOT / "outputs" / "ai-usage-report.html"
 DEFAULT_PRICING = PROJECT_ROOT / "config" / "pricing.json"
@@ -232,6 +235,44 @@ def parse_claude_code(root: Path, since: dt.date) -> tuple[list[Usage], int]:
     return sorted(usages.values(), key=lambda item: (item.date, item.model)), files_read
 
 
+def parse_minimax(database: Path, since: dt.date) -> tuple[list[Usage], int]:
+    """Read MiniMax Agent's local per-turn token accounting table.
+
+    Only the accounting columns are selected. The ``raw`` field and session
+    message tables are deliberately not read.
+    """
+    if not database.is_file():
+        return [], 0
+    usages: dict[tuple[str, str], Usage] = {}
+    try:
+        connection = sqlite3.connect(f"file:{database}?mode=ro", uri=True)
+        rows = connection.execute(
+            "SELECT model, ts, input_tokens, output_tokens, reasoning_tokens, "
+            "cache_read_tokens, cache_write_tokens FROM token_usage ORDER BY ts"
+        ).fetchall()
+    except (sqlite3.Error, OSError):
+        return [], 0
+    finally:
+        if "connection" in locals():
+            connection.close()
+    for model, timestamp, input_tokens, output_tokens, reasoning_tokens, cache_read, cache_write in rows:
+        try:
+            moment = dt.datetime.fromtimestamp(int(timestamp) / 1000).astimezone()
+        except (TypeError, ValueError, OSError):
+            continue
+        if moment.date() < since:
+            continue
+        date = moment.date().isoformat()
+        model = model.strip() if isinstance(model, str) and model.strip() else "未记录模型"
+        key = (date, model)
+        item = usages.setdefault(key, Usage("MiniMax", model, date))
+        item.input_tokens += as_int(input_tokens)
+        item.output_tokens += as_int(output_tokens) + as_int(reasoning_tokens)
+        item.cached_input_tokens += as_int(cache_read)
+        item.cache_write_input_tokens += as_int(cache_write)
+    return sorted(usages.values(), key=lambda item: (item.date, item.model)), 1
+
+
 def iter_json_documents(root: Path) -> Iterable[tuple[Path, dict[str, Any]]]:
     """Read JSON/JSONL session documents; unreadable documents are skipped."""
     if not root.exists():
@@ -432,9 +473,23 @@ def load_pricing(path: Path) -> dict[str, Any]:
     return data
 
 
+def pricing_model_for_usage(item: Usage, pricing: dict[str, Any]) -> tuple[str, bool]:
+    """Resolve configured aliases and the explicit Auto-model fallback."""
+    aliases = pricing.get("model_aliases") if isinstance(pricing.get("model_aliases"), dict) else {}
+    resolved = aliases.get(item.model, item.model)
+    normalized = item.model.strip().lower().replace("_", "-")
+    is_auto = normalized in {"auto", "automatic", "model-auto"} or normalized.endswith("/auto")
+    if not is_auto:
+        return str(resolved), False
+    fallbacks = pricing.get("auto_fallbacks") if isinstance(pricing.get("auto_fallbacks"), dict) else {}
+    fallback = fallbacks.get(item.provider)
+    return (str(fallback), True) if isinstance(fallback, str) and fallback else (item.model, False)
+
+
 def api_equivalent_cost(item: Usage, pricing: dict[str, Any]) -> float | None:
     models = pricing.get("models") if isinstance(pricing.get("models"), dict) else {}
-    rate = models.get(item.model)
+    pricing_model, _ = pricing_model_for_usage(item, pricing)
+    rate = models.get(pricing_model)
     if not isinstance(rate, dict):
         return None
     periods = rate.get("periods")
@@ -489,7 +544,8 @@ def deepseek_equivalent_cost(item: Usage, pricing: dict[str, Any], tiers: dict[s
     this model's capability class (config/deepseek_tier_map.json), and DeepSeek's own real cache-hit
     vs cache-miss rates are applied to this item's own actual cache-hit/miss token split - not a
     guessed or borrowed ratio."""
-    tier = tiers.get(item.model)
+    pricing_model, _ = pricing_model_for_usage(item, pricing)
+    tier = tiers.get(pricing_model)
     if tier is None:
         return None
     models = pricing.get("models") if isinstance(pricing.get("models"), dict) else {}
@@ -541,7 +597,10 @@ def plan_data(pricing: dict[str, Any]) -> list[dict[str, Any]]:
 def subscription_plan_data(pricing: dict[str, Any]) -> list[dict[str, Any]]:
     """Return browser-ready plans for every configured subscription provider."""
     subscriptions = pricing.get("subscriptions") if isinstance(pricing.get("subscriptions"), dict) else {}
-    provider_names = {"Codex": "ChatGPT", "Claude": "Claude", "Gemini": "Gemini", "Grok": "Grok"}
+    provider_names = {
+        "Codex": "ChatGPT", "Claude": "Claude", "Gemini": "Gemini", "Grok": "Grok",
+        "MiniMax": "MiniMax", "Kimi": "Kimi", "GLM": "GLM", "Bailian": "阿里百炼",
+    }
     cleaned = []
     for configured_name, browser_name in provider_names.items():
         config = subscriptions.get(configured_name)
@@ -549,10 +608,12 @@ def subscription_plan_data(pricing: dict[str, Any]) -> list[dict[str, Any]]:
         for plan in plans:
             if not isinstance(plan, dict) or not isinstance(plan.get("start_date"), str):
                 continue
-            if isinstance(plan.get("monthly_usd"), (int, float)):
-                cleaned.append({"provider": browser_name, "start_date": plan["start_date"], "amount": float(plan["monthly_usd"]), "cycle": "month"})
+            if isinstance(plan.get("amount"), (int, float)) and plan.get("currency") in {"USD", "CNY"} and plan.get("cycle") in {"month", "year"}:
+                cleaned.append({"provider": browser_name, "start_date": plan["start_date"], "amount": float(plan["amount"]), "currency": plan["currency"], "cycle": plan["cycle"]})
+            elif isinstance(plan.get("monthly_usd"), (int, float)):
+                cleaned.append({"provider": browser_name, "start_date": plan["start_date"], "amount": float(plan["monthly_usd"]), "currency": "USD", "cycle": "month"})
             elif isinstance(plan.get("annual_usd"), (int, float)):
-                cleaned.append({"provider": browser_name, "start_date": plan["start_date"], "amount": float(plan["annual_usd"]), "cycle": "year"})
+                cleaned.append({"provider": browser_name, "start_date": plan["start_date"], "amount": float(plan["annual_usd"]), "currency": "USD", "cycle": "year"})
     return sorted(cleaned, key=lambda item: (item["provider"], item["start_date"]))
 
 
@@ -562,7 +623,12 @@ PROVIDER_META = {
     "Claude Code": {"label": "Claude", "plan": "Claude", "color": "#ff9f43"},
     "Gemini CLI": {"label": "Gemini", "plan": "Gemini", "color": "#23d8aa"},
     "Grok Build": {"label": "Grok", "plan": "Grok", "color": "#b180ff"},
+    "MiniMax": {"label": "MiniMax", "plan": "MiniMax", "color": "#ff5b8d"},
+    "Kimi": {"label": "Kimi", "plan": "Kimi", "color": "#ffd166"},
+    "GLM": {"label": "GLM", "plan": "GLM", "color": "#41c7ff"},
+    "Bailian": {"label": "阿里百炼", "plan": "阿里百炼", "color": "#7ddc72"},
 }
+DEFAULT_ENABLED_PROVIDERS = tuple(PROVIDER_META)
 
 
 def render_dashboard(
@@ -572,27 +638,40 @@ def render_dashboard(
     pricing: dict[str, Any],
     app_version: str = "development",
     deepseek_tiers: dict[str, str] | None = None,
+    enabled_providers: list[str] | tuple[str, ...] | None = None,
+    display_currency: str = "USD",
+    fx_cache: dict | None = None,
 ) -> str:
     """Render the overview and provider details from one provider-neutral payload."""
     if deepseek_tiers is None:
         deepseek_tiers = load_deepseek_tier_map(DEFAULT_DEEPSEEK_TIER_MAP)
     today = report_today()
+    display_currency = display_currency if display_currency in {"USD", "CNY"} else "USD"
     dates = [(today - dt.timedelta(days=index)).isoformat() for index in range(days - 1, -1, -1)]
-    by_provider: dict[str, list[Usage]] = {provider: [] for provider in PROVIDER_META}
+    fx_payload = fx_rates.browser_payload(fx_cache or {}, dates)
+    usd_cny_by_date = fx_payload["usd_cny_by_date"]
+    requested = DEFAULT_ENABLED_PROVIDERS if enabled_providers is None else enabled_providers
+    enabled = tuple(provider for provider in requested if provider in PROVIDER_META)
+    usages = [item for item in usages if item.provider in enabled]
+    by_provider: dict[str, list[Usage]] = {provider: [] for provider in enabled}
     for item in usages:
         if item.provider in by_provider:
             by_provider[item.provider].append(item)
 
     providers = []
     total_input = total_output = total_cached = total_tokens = 0
-    for provider, meta in PROVIDER_META.items():
+    for provider in enabled:
+        meta = PROVIDER_META[provider]
         items = by_provider[provider]
-        daily = {date: {"input": 0, "output": 0, "cached": 0, "tokens": 0, "cost": 0.0, "unpriced": 0} for date in dates}
+        daily = {date: {"input": 0, "output": 0, "cached": 0, "tokens": 0, "cost": 0.0, "cost_cny": 0.0, "unpriced": 0} for date in dates}
         models: dict[str, Usage] = {}
         model_costs: dict[str, float] = defaultdict(float)
+        model_costs_cny: dict[str, float] = defaultdict(float)
         model_deepseek_costs: dict[str, float] = defaultdict(float)
+        model_deepseek_costs_cny: dict[str, float] = defaultdict(float)
         priced_models: set[str] = set()
         deepseek_priced_models: set[str] = set()
+        estimated_pricing_models: set[str] = set()
         provider_input = provider_output = provider_cached = provider_tokens = provider_unpriced = 0
         provider_cost = 0.0
         provider_deepseek_cost = 0.0
@@ -601,12 +680,18 @@ def render_dashboard(
         for item in items:
             if item.date not in daily:
                 continue
+            _, pricing_estimated = pricing_model_for_usage(item, pricing)
+            if pricing_estimated:
+                estimated_pricing_models.add(item.model)
             cost = api_equivalent_cost(item, pricing)
             deepseek_cost = deepseek_equivalent_cost(item, pricing, deepseek_tiers)
             if deepseek_cost is not None:
                 provider_deepseek_cost += deepseek_cost
                 provider_deepseek_matched += item.total_tokens
                 model_deepseek_costs[item.model] += deepseek_cost
+                rate = usd_cny_by_date.get(item.date)
+                if rate is not None:
+                    model_deepseek_costs_cny[item.model] += deepseek_cost * rate
                 deepseek_priced_models.add(item.model)
             row = daily[item.date]
             row["input"] += item.input_tokens
@@ -618,8 +703,13 @@ def render_dashboard(
                 provider_unpriced += item.total_tokens
             else:
                 row["cost"] += cost
+                rate = usd_cny_by_date.get(item.date)
+                if rate is not None:
+                    row["cost_cny"] += cost * rate
                 provider_cost += cost
                 model_costs[item.model] += cost
+                if rate is not None:
+                    model_costs_cny[item.model] += cost * rate
                 priced_models.add(item.model)
             provider_input += item.input_tokens
             provider_output += item.output_tokens
@@ -640,7 +730,8 @@ def render_dashboard(
         model_data = []
         for item in sorted(models.values(), key=lambda value: value.total_tokens, reverse=True):
             model_cost = model_costs[item.model] if item.model in priced_models else None
-            deepseek_tier = deepseek_tiers.get(item.model) if item.model in deepseek_priced_models else None
+            pricing_model, _ = pricing_model_for_usage(item, pricing)
+            deepseek_tier = deepseek_tiers.get(pricing_model) if item.model in deepseek_priced_models else None
             model_data.append({
                 "model": item.model,
                 "input": item.input_tokens,
@@ -648,8 +739,11 @@ def render_dashboard(
                 "cached": item.cached_input_tokens + item.cache_write_input_tokens,
                 "tokens": item.total_tokens,
                 "cost": model_cost,
-                "estimated": item.is_estimate,
+                "cost_cny": round(model_costs_cny[item.model], 8) if item.model in priced_models else None,
+                "estimated": item.is_estimate or item.model in estimated_pricing_models,
+                "pricing_model": pricing_model if item.model in estimated_pricing_models else None,
                 "deepseek_cost": round(model_deepseek_costs[item.model], 8) if deepseek_tier else None,
+                "deepseek_cost_cny": round(model_deepseek_costs_cny[item.model], 8) if deepseek_tier else None,
                 "deepseek_tier": deepseek_tier,
             })
         providers.append({
@@ -660,11 +754,12 @@ def render_dashboard(
             "has_data": bool(items),
             "estimated": estimated,
             "files": source_files.get(provider, 0),
-            "totals": {"input": provider_input, "output": provider_output, "cached": provider_cached, "tokens": provider_tokens, "cost": round(provider_cost, 8), "unpriced": provider_unpriced},
-            "daily": [{"date": date, **daily[date], "cost": round(float(daily[date]["cost"]), 8)} for date in dates],
+            "totals": {"input": provider_input, "output": provider_output, "cached": provider_cached, "tokens": provider_tokens, "cost": round(provider_cost, 8), "cost_cny": round(sum(float(daily[date]["cost_cny"]) for date in dates), 8), "unpriced": provider_unpriced},
+            "daily": [{"date": date, **daily[date], "cost": round(float(daily[date]["cost"]), 8), "cost_cny": round(float(daily[date]["cost_cny"]), 8)} for date in dates],
             "models": model_data,
             "cache_hit_rate": cache_hit_rate,
             "deepseek_cost": round(provider_deepseek_cost, 8) if provider_deepseek_matched else None,
+            "deepseek_cost_cny": round(sum(model_deepseek_costs_cny.values()), 8) if provider_deepseek_matched else None,
             "deepseek_matched": provider_deepseek_matched,
         })
 
@@ -677,27 +772,34 @@ def render_dashboard(
         "plans": default_plans,
         "generated_at": generated_now.isoformat(timespec="seconds"),
         "unpriced_models": sorted({item.model for item in usages if api_equivalent_cost(item, pricing) is None}),
+        "display_currency": display_currency,
+        "fx": fx_payload,
     }
     generated_display = generated_now.strftime("%Y-%m-%d %H:%M")
     data = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
     return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{FAVICON_TAG}<title>订阅 AI 用量报表</title><style>
 :root{{--bg:#080d18;--card:#101a2b;--card2:#0c1728;--ink:#ecf5ff;--sub:#91a3bf;--line:#263854;--accent:#61a8ff;--danger:#ff6f86;color-scheme:dark}}*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--ink);font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}}main{{max-width:1540px;margin:auto;padding:36px 24px 70px}}h1{{font-size:30px;margin:0;display:flex;align-items:center;gap:12px}}.brand-logo{{width:36px;height:36px;border-radius:8px;flex:none}}h2{{font-size:19px;margin:0 0 8px}}h3{{font-size:15px;margin:0 0 10px}}p{{color:var(--sub);line-height:1.6;margin:6px 0 0}}.head{{display:flex;justify-content:space-between;gap:20px;align-items:end}}.head-actions{{display:flex;align-items:center;gap:10px}}.head-actions button{{height:36px}}.section{{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:18px;overflow-x:auto}}.summary{{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;min-width:1280px}}.plan-grid{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}}.detail-summary{{display:grid;grid-template-columns:repeat(6,minmax(160px,1fr));gap:12px;min-width:1150px}}.metric-card,.plan-card{{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--card2)}}.metric-card{{display:flex;flex-direction:column;justify-content:space-between;min-height:108px}}.metric{{font-size:20px;font-weight:750;margin:0;padding-top:12px;word-break:break-word;overflow-wrap:anywhere}}.muted{{color:var(--sub)}}.hint{{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#263854;color:#91a3bf;font-size:11px;margin-left:5px;cursor:help;vertical-align:middle}}.plan-card{{min-height:126px}}.plan-card .price{{font-size:21px;font-weight:750;margin:10px 0}}.editor{{display:grid;grid-template-columns:minmax(210px,1.15fr) minmax(170px,.9fr) minmax(220px,1fr) minmax(280px,1.45fr) 132px;gap:16px;align-items:end;margin-top:24px}}label{{display:grid;gap:9px;color:var(--sub);font-size:13px}}input,select,button{{height:48px;border-radius:10px;border:1px solid var(--line);font:inherit}}input,select{{background:#0a1322;color:var(--ink);padding:0 14px;min-width:0}}input[type=number]{{appearance:textfield;-moz-appearance:textfield}}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{{-webkit-appearance:none;margin:0}}button{{background:var(--accent);color:#07101d;border-color:var(--accent);font-weight:750;padding:0 14px;cursor:pointer}}button:hover{{filter:brightness(1.12)}}.chartbox{{border:1px solid var(--line);border-radius:13px;padding:16px;margin-top:16px;background:var(--card2);overflow:hidden}}.legend{{display:flex;gap:17px;flex-wrap:wrap;margin:10px 0 5px;color:var(--sub)}}.dot{{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}}svg{{width:100%;height:300px;display:block}}.axis{{stroke:#365173;stroke-width:1}}.gridline{{stroke:#223651;stroke-width:1}}.tick{{fill:#91a3bf;font-size:11px}}.hoverline{{stroke:#d8f2ff;stroke-width:1;stroke-dasharray:4 4}}.tip{{position:fixed;display:none;pointer-events:none;z-index:10;background:#050b14;color:#fff;border:1px solid #405778;border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.6;box-shadow:0 10px 28px #0009}}.tabs{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:20px 0 22px}}.tab{{background:#15243a;color:var(--sub);border-color:var(--line);width:100%;font-size:15px}}.tab.active{{background:var(--accent);color:#07101d}}.detail{{display:none}}.detail.active{{display:block}}table{{width:100%;border-collapse:collapse;margin-top:18px}}th,td{{padding:11px 8px;border-top:1px solid var(--line);text-align:center}}th{{font-size:12px;color:var(--sub);text-align:center}}.empty{{padding:26px;text-align:center;color:var(--sub)}}@media(max-width:900px){{.plan-grid{{grid-template-columns:1fr 1fr}}.editor{{grid-template-columns:1fr 1fr}}}}@media(max-width:560px){{main{{padding:24px 14px}}.plan-grid,.editor{{grid-template-columns:1fr}}svg{{height:260px}}}}
-.help-link{{display:inline-flex;align-items:center;height:36px;border:1px solid var(--line);border-radius:9px;padding:0 12px;color:var(--ink);background:#15243a;text-decoration:none}}
-</style></head><body><main><div class="head"><div><h1>{LOGO_IMG}订阅 AI 用量报表</h1><p>最近 {days} 天 · 按电脑当前时区分日 · 数据来自本机日志 · API 价格数据来自 OpenRouter · Ver {html.escape(app_version)}</p></div><div class="head-actions"><span class="muted" id="refresh-status">生成于本机 · {generated_display}</span><a class="help-link" href="http://127.0.0.1:17653/help">配置及使用说明</a><button id="refresh-local">更新本机数据</button></div></div>
+.help-link{{display:inline-flex;align-items:center;height:36px;border:1px solid var(--line);border-radius:9px;padding:0 12px;color:var(--ink);background:#15243a;text-decoration:none}}.currency-switch{{display:flex;height:36px;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#0a1322}}.currency-switch button{{height:34px;border:0;border-radius:0;background:transparent;color:var(--sub);padding:0 11px}}.currency-switch button.active{{background:var(--accent);color:#07101d}}.fx-note{{font-size:12px;color:var(--sub);margin-top:8px}}
+</style></head><body><main><div class="head"><div><h1>{LOGO_IMG}订阅 AI 用量报表</h1><p>最近 {days} 天 · 按电脑当前时区分日 · 数据来自本机日志 · API 价格数据来自 OpenRouter · Ver {html.escape(app_version)}</p></div><div class="head-actions"><span class="muted" id="refresh-status">生成于本机 · {generated_display}</span><div class="currency-switch" aria-label="显示货币"><button id="currency-usd" data-currency="USD">USD</button><button id="currency-cny" data-currency="CNY">CNY</button></div><a class="help-link" href="http://127.0.0.1:17653/help">配置及使用说明</a><button id="refresh-local">更新本机数据</button></div></div>
 <section class="section"><div class="summary"><div class="metric-card"><div class="muted">总 Token</div><div class="metric">{number(total_tokens)}</div></div><div class="metric-card"><div class="muted">输入 Token</div><div class="metric">{number(total_input)}</div></div><div class="metric-card"><div class="muted">输出 Token</div><div class="metric">{number(total_output)}</div></div><div class="metric-card"><div class="muted">API 等价价值</div><div class="metric" id="summary-api">—</div></div><div class="metric-card"><div class="muted">有效订阅成本<span class="hint" data-tip="按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。">?</span></div><div class="metric" id="summary-sub">—</div></div><div class="metric-card"><div class="muted">价值倍数</div><div class="metric" id="summary-ratio">—</div></div><div class="metric-card"><div class="muted">对应 DeepSeek 成本<span class="hint" data-tip="各平台已计价模型的 DeepSeek 参考成本合计。">?</span></div><div class="metric" id="summary-deepseek">—</div></div></div><p class="muted" style="margin-top:14px">无法确认具体模型的记录保留 Token，但不参与价格计算；所示金额为已确认模型的保守估算。</p></section>
-<section class="section"><h2>订阅计划</h2><p>每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。</p><div id="plan-grid" class="plan-grid"></div><div class="editor"><label>平台<select id="provider"></select></label><label>周期<select id="cycle"><option value="month">按月</option><option value="year">按年</option></select></label><label>生效日期<input id="start" type="date"></label><label>订阅金额（USD）<input id="amount" type="number" min="0" step="0.01" placeholder="输入订阅金额"></label><button id="save">保存计划</button></div></section>
+<section class="section"><h2>订阅计划</h2><p>每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。</p><div id="plan-grid" class="plan-grid"></div><div class="editor"><label>平台<select id="provider"></select></label><label>周期<select id="cycle"><option value="month">按月</option><option value="year">按年</option></select></label><label>生效日期<input id="start" type="date"></label><label><span id="amount-label">订阅金额（USD）</span><input id="amount" type="number" min="0" step="0.01" placeholder="输入订阅金额"></label><button id="save">保存计划</button></div><div class="fx-note" id="fx-note"></div></section>
 <section class="section"><h2>最近 {days} 天 报表</h2><div class="chartbox"><h3>每日 Token</h3><p>各平台当天输入、输出和缓存口径合并后的 Token。</p><div class="legend" id="token-legend"></div><svg id="tokens" viewBox="0 0 1100 300" role="img" aria-label="各平台每日 Token 折线图"></svg></div><div class="chartbox"><h3>每日订阅价值倍数</h3><p>当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。</p><div class="legend" id="ratio-legend"></div><svg id="ratio" viewBox="0 0 1100 300" role="img" aria-label="各平台每日订阅价值倍数折线图"></svg></div></section>
 <section class="section"><h2>平台详情</h2><div id="tabs" class="tabs"></div><div id="details"></div></section></main><div id="tip" class="tip"></div>
-<script>const DATA={data};const $=id=>document.getElementById(id);let plans=Array.isArray(DATA.plans)?DATA.plans:[];document.addEventListener('DOMContentLoaded',()=>{{document.querySelectorAll('.metric-card').forEach(x=>{{x.style.alignItems='center';x.style.textAlign='center'}});document.querySelectorAll('table th,table td').forEach(x=>x.style.textAlign='center')}});
-const cash=v=>'$'+Number(v).toFixed(2),num=v=>Number(v).toLocaleString(),esc=v=>String(v).replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));
-function activePlan(provider,date){{return plans.filter(p=>p.provider===provider&&p.start_date<=date).sort((a,b)=>a.start_date.localeCompare(b.start_date)).pop()||null}}function dailyCost(provider,date){{let p=activePlan(provider,date);return p?p.amount/(p.cycle==='year'?360:30):0}}
-function renderSummary(){{let api=DATA.providers.reduce((n,p)=>n+p.totals.cost,0),sub=DATA.providers.reduce((n,p)=>n+p.daily.reduce((s,d)=>s+dailyCost(p.plan,d.date),0),0),ds=DATA.providers.reduce((n,p)=>n+(p.deepseek_cost||0),0);$('summary-api').textContent=cash(api);$('summary-sub').textContent=cash(sub);$('summary-ratio').textContent=sub?(api/sub).toFixed(2)+'×':'未计算';$('summary-deepseek').textContent=cash(ds)}}
-function renderPlans(){{$('provider').innerHTML=DATA.providers.map(p=>`<option value="${{esc(p.plan)}}">${{esc(p.label)}}</option>`).join('');let windowStart=DATA.days[0];$('plan-grid').innerHTML=DATA.providers.map(p=>{{let current=activePlan(p.plan,DATA.today);if(!current)return `<div class="plan-card"><h3>${{esc(p.label)}}</h3><div class="price">未设置</div><div class="muted">不计算订阅成本与倍数</div></div>`;let startingPlan=activePlan(p.plan,windowStart),history=plans.filter(x=>x.provider===p.plan&&(x.start_date>windowStart||(startingPlan&&x.start_date===startingPlan.start_date))).sort((a,b)=>a.start_date.localeCompare(b.start_date)),rows=history.length>1?history.map(h=>`<div class="muted">${{h.start_date}} 生效 · ${{cash(h.amount)}} / ${{h.cycle==='year'?'年':'月'}}</div>`).join(''):`<div class="muted">${{current.start_date}} 生效</div>`;return `<div class="plan-card"><h3>${{esc(p.label)}}</h3><div class="price">${{cash(current.amount)}} / ${{current.cycle==='year'?'年':'月'}}</div>${{rows}}<div class="muted">历史计划 ${{history.length}} 条</div></div>`}}).join('')}}
-function focusProvider(providerId){{document.querySelectorAll('path.series').forEach(path=>{{let active=path.dataset.provider===providerId;path.style.opacity=active?'1':'.16';path.setAttribute('stroke-width',active?'5':'2')}})}}function clearProviderFocus(){{document.querySelectorAll('path.series').forEach(path=>{{path.style.opacity='1';path.setAttribute('stroke-width','3')}})}}function legend(id){{$(id).innerHTML=DATA.providers.map(p=>`<span class="legend-item" tabindex="0" data-provider="${{esc(p.id)}}" style="cursor:pointer;padding:4px 7px;border-radius:7px"><i class="dot" style="background:${{p.color}}"></i>${{esc(p.label)}}${{p.has_data?'':'（无数据）'}}</span>`).join('');$(id).querySelectorAll('.legend-item').forEach(item=>{{item.onmouseenter=item.onfocus=()=>focusProvider(item.dataset.provider);item.onmouseleave=item.onblur=clearProviderFocus}})}}
-function series(type){{return DATA.providers.map(p=>{{let hasPriced=p.totals.tokens>p.totals.unpriced;return {{provider:p,values:p.daily.map(d=>{{if(!p.has_data)return null;if(type==='tokens')return d.tokens;let cost=dailyCost(p.plan,d.date);return hasPriced&&cost?d.cost/cost:null}})}}}})}}
-function chart(id,type){{let svg=$(id),w=1100,h=300,l=64,r=20,t=18,b=38,iw=w-l-r,ih=h-t-b,all=series(type),finite=all.flatMap(s=>s.values.filter(v=>v!==null)),max=Math.max(1,...finite),x=i=>l+(DATA.days.length===1?0:i*iw/(DATA.days.length-1)),y=v=>t+ih-v/max*ih;let grid=[0,.25,.5,.75,1].map(k=>`<line class="gridline" x1="${{l}}" y1="${{y(max*k)}}" x2="${{w-r}}" y2="${{y(max*k)}}"/><text class="tick" x="4" y="${{y(max*k)+4}}">${{type==='tokens'?Math.round(max*k).toLocaleString():(max*k).toFixed(1)+'×'}}</text>`).join('');let paths=all.map(s=>{{let parts=[],open=false,points=[];s.values.forEach((v,i)=>{{if(v===null){{open=false;return}}parts.push(`${{open?'L':'M'}}${{x(i).toFixed(1)}} ${{y(v).toFixed(1)}}`);points.push(`<circle cx="${{x(i)}}" cy="${{y(v)}}" r="${{finite.length===1?5:2.6}}" fill="${{s.provider.color}}"/>`);open=true}});return parts.length?`<g data-provider="${{esc(s.provider.id)}}"><path class="series" data-provider="${{esc(s.provider.id)}}" d="${{parts.join(' ')}}" fill="none" stroke="${{s.provider.color}}" stroke-width="3"/>${{points.join('')}}</g>`:''}}).join('');let labels=DATA.days.map((d,i)=>i===0||(DATA.days.length-1-i)%3===0?`<text class="tick" x="${{x(i)}}" y="292" text-anchor="middle">${{d.slice(5)}}${{i===DATA.days.length-1?'（今日）':''}}</text>`:'').join('');svg.innerHTML=grid+paths+`<line class="hoverline" visibility="hidden" x1="0" y1="${{t}}" x2="0" y2="${{t+ih}}"/><rect class="hit-area" x="${{l}}" y="${{t}}" width="${{iw}}" height="${{ih}}" fill="transparent" style="pointer-events:all"/>`+labels;let hit=svg.querySelector('.hit-area');hit.onmousemove=e=>{{let bounds=hit.getBoundingClientRect(),fraction=(e.clientX-bounds.left)/bounds.width,i=Math.max(0,Math.min(DATA.days.length-1,Math.round(fraction*(DATA.days.length-1)))),date=DATA.days[i],line=svg.querySelector('.hoverline');line.setAttribute('x1',x(i));line.setAttribute('x2',x(i));line.setAttribute('visibility','visible');let rows=DATA.providers.map(p=>{{let d=p.daily[i];if(!p.has_data)return `<span style="color:${{p.color}}">${{esc(p.label)}}</span>：无数据`;if(type==='tokens')return `<span style="color:${{p.color}}">${{esc(p.label)}}</span>：${{num(d.tokens)}} Token`;let sub=dailyCost(p.plan,date),priced=p.totals.tokens>p.totals.unpriced,ratio=priced&&sub?d.cost/sub:null,status=!sub?'无生效计划':!priced?'模型未计价':ratio.toFixed(2)+'×';return `<span style="color:${{p.color}}">${{esc(p.label)}}</span>：${{status}}<br>API ${{cash(d.cost)}} · 日成本 ${{cash(sub)}}`}}).join('<br>');$('tip').innerHTML=`${{date}}<br>${{rows}}`;$('tip').style.display='block';$('tip').style.left=Math.min(e.clientX+14,window.innerWidth-260)+'px';$('tip').style.top=(e.clientY+14)+'px'}};hit.onmouseleave=()=>{{svg.querySelector('.hoverline').setAttribute('visibility','hidden');$('tip').style.display='none'}}}}
-function renderDetails(){{$('tabs').innerHTML=DATA.providers.map((p,i)=>`<button class="tab ${{i===0?'active':''}}" data-id="${{esc(p.id)}}">${{esc(p.label)}}</button>`).join('');$('details').innerHTML=DATA.providers.map((p,i)=>{{let t=p.totals,subscription=p.daily.reduce((sum,d)=>sum+dailyCost(p.plan,d.date),0),hasPriced=t.tokens>t.unpriced,multiple=subscription&&hasPriced?t.cost/subscription:null,rows=p.models.map(m=>`<tr><td>${{esc(m.model)}}${{m.estimated?'（估算）':''}}</td><td>${{num(m.input)}}</td><td>${{num(m.output)}}</td><td>${{num(m.cached)}}</td><td>${{num(m.tokens)}}</td><td>${{m.cost===null?'未公开价格':cash(m.cost)}}</td><td>${{m.deepseek_tier?`${{cash(m.deepseek_cost)}}<span class="hint" data-tip="${{m.deepseek_tier==='pro'?'对应 DeepSeek V4 Pro':'对应 DeepSeek V4 Flash'}}">?</span>`:'—'}}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">本机没有可解析记录</td></tr>';return `<div class="detail ${{i===0?'active':''}}" data-id="${{esc(p.id)}}"><div class="detail-summary"><div class="metric-card"><div class="muted">最近 {days} 天总 Token</div><div class="metric">${{num(t.tokens)}}</div></div><div class="metric-card"><div class="muted">最近 {days} 天 API 等价价值</div><div class="metric">${{cash(t.cost)}}</div></div><div class="metric-card"><div class="muted">最近 {days} 天有效订阅成本<span class="hint" data-tip="按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。">?</span></div><div class="metric">${{cash(subscription)}}</div></div><div class="metric-card"><div class="muted">最近 {days} 天同区间价值倍数</div><div class="metric">${{multiple===null?'未计算':multiple.toFixed(2)+'×'}}</div></div><div class="metric-card"><div class="muted">缓存命中率</div><div class="metric">${{p.cache_hit_rate===null?'—':(p.cache_hit_rate*100).toFixed(1)+'%'}}</div></div><div class="metric-card"><div class="muted">对应 DeepSeek 成本<span class="hint" data-tip="以 DeepSeek 定价核算的成本，缓存命中率已计入">?</span></div><div class="metric">${{p.deepseek_cost===null?'—':cash(p.deepseek_cost)}}</div></div></div><table><thead><tr><th>模型</th><th>输入</th><th>输出</th><th>缓存输入</th><th>总 Token</th><th>API 等价价值</th><th>对应 DeepSeek</th></tr></thead><tbody>${{rows}}</tbody></table></div>`}}).join('');document.querySelectorAll('.tab').forEach(tab=>tab.onclick=()=>{{document.querySelectorAll('.tab,.detail').forEach(x=>x.classList.remove('active'));tab.classList.add('active');document.querySelector(`.detail[data-id="${{CSS.escape(tab.dataset.id)}}"]`).classList.add('active')}})}}
-$('save').onclick=async()=>{{let provider=$('provider').value,cycle=$('cycle').value,start=$('start').value,amount=Number($('amount').value);if(!start||!(amount>0))return;let candidate={{provider,start_date:start,cycle,amount}};try{{let response=await fetch('http://127.0.0.1:17653/plans',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(candidate)}});if(!response.ok)throw new Error();let result=await response.json();plans=result.plans;$('start').value='';$('amount').value='';renderPlans();renderSummary();chart('ratio','ratio');renderDetails()}}catch{{alert('本机应用未运行，订阅计划没有保存')}}}};$('refresh-local').onclick=async()=>{{let status=$('refresh-status');status.textContent='正在更新…';try{{let response=await fetch('http://127.0.0.1:17653/refresh',{{method:'POST'}});if(!response.ok)throw new Error();status.textContent='更新完成，正在打开本机报表';setTimeout(()=>location.href='http://127.0.0.1:17653/report',350)}}catch{{status.textContent='本机应用未运行'}}}};let reportVersion=0;async function syncLanguage(){{try{{let response=await fetch('http://127.0.0.1:17653/state?ts='+Date.now(),{{cache:'no-store'}});if(!response.ok)return;let state=await response.json(),current=document.documentElement.lang;if(reportVersion&&state.report_version!==reportVersion&&state.language!==current)location.replace('http://127.0.0.1:17653/report?ts='+Date.now());reportVersion=state.report_version}}catch{{}}}}setInterval(syncLanguage,1000);syncLanguage();renderPlans();renderSummary();legend('token-legend');legend('ratio-legend');chart('tokens','tokens');chart('ratio','ratio');renderDetails();document.body.addEventListener('mouseover',e=>{{let h=e.target.closest('.hint');if(!h)return;let r=h.getBoundingClientRect(),box=$('tip');box.textContent=h.dataset.tip;box.style.display='block';box.style.left=Math.min(r.left,window.innerWidth-260)+'px';box.style.top=(r.bottom+8)+'px'}});document.body.addEventListener('mouseout',e=>{{if(e.target.closest('.hint'))$('tip').style.display='none'}});</script></body></html>'''
+<script>const DATA={data};const $=id=>document.getElementById(id);let plans=Array.isArray(DATA.plans)?DATA.plans:[],displayCurrency=DATA.display_currency==='CNY'&&DATA.fx.latest_rate_date?'CNY':'USD';document.addEventListener('DOMContentLoaded',()=>{{document.querySelectorAll('.metric-card').forEach(x=>{{x.style.alignItems='center';x.style.textAlign='center'}});document.querySelectorAll('table th,table td').forEach(x=>x.style.textAlign='center')}});
+const num=v=>Number(v).toLocaleString(),esc=v=>String(v).replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c])),rate=date=>DATA.fx.usd_cny_by_date[date]||null,convert=(value,from,to,date)=>{{if(from===to)return Number(value);let r=rate(date);if(!r)return null;return from==='USD'?Number(value)*r:Number(value)/r}},cash=(v,currency=displayCurrency)=>v===null?'—':new Intl.NumberFormat(document.documentElement.lang||'zh-CN',{{style:'currency',currency,minimumFractionDigits:2,maximumFractionDigits:2}}).format(Number(v)),multipleText=v=>v===null?'未计算':(Number(v)<.01?Number(v).toFixed(4):Number(v).toFixed(2))+'×',apiValue=(row,date)=>displayCurrency==='CNY'?(rate(date)?row.cost_cny:null):row.cost,aggregateValue=(item,key)=>displayCurrency==='CNY'?item[key+'_cny']:item[key];
+function activePlan(provider,date){{return plans.filter(p=>p.provider===provider&&p.start_date<=date).sort((a,b)=>a.start_date.localeCompare(b.start_date)).pop()||null}}function dailyCost(provider,date){{let p=activePlan(provider,date);if(!p)return 0;let converted=convert(p.amount,p.currency||'USD',displayCurrency,date);return converted===null?null:converted/(p.cycle==='year'?360:30)}}
+function renderSummary(){{let api=DATA.providers.reduce((n,p)=>n+(aggregateValue(p.totals,'cost')||0),0),sub=DATA.providers.reduce((n,p)=>n+p.daily.reduce((s,d)=>{{let cost=dailyCost(p.plan,d.date);return s+(cost||0)}},0),0),ds=DATA.providers.reduce((n,p)=>n+(aggregateValue(p,'deepseek_cost')||0),0);$('summary-api').textContent=cash(api);$('summary-sub').textContent=cash(sub);$('summary-ratio').textContent=multipleText(sub?api/sub:null);$('summary-deepseek').textContent=cash(ds)}}
+function renderPlans(){{$('provider').innerHTML=DATA.providers.map(p=>`<option value="${{esc(p.plan)}}">${{esc(p.label)}}</option>`).join('');$('plan-grid').style.gridTemplateColumns=`repeat(${{Math.max(1,DATA.providers.length)}},minmax(0,1fr))`;let windowStart=DATA.days[0];$('plan-grid').innerHTML=DATA.providers.map(p=>{{let current=activePlan(p.plan,DATA.today);if(!current)return `<div class="plan-card"><h3>${{esc(p.label)}}</h3><div class="price">未设置</div><div class="muted">不计算订阅成本与倍数</div></div>`;let startingPlan=activePlan(p.plan,windowStart),history=plans.filter(x=>x.provider===p.plan&&(x.start_date>windowStart||(startingPlan&&x.start_date===startingPlan.start_date))).sort((a,b)=>a.start_date.localeCompare(b.start_date)),shown=h=>convert(h.amount,h.currency||'USD',displayCurrency,DATA.today),rows=history.length>1?history.map(h=>`<div class="muted">${{h.start_date}} 生效 · ${{cash(shown(h))}} / ${{h.cycle==='year'?'年':'月'}} <span>(${{h.currency||'USD'}})</span></div>`).join(''):`<div class="muted">${{current.start_date}} 生效 · 原币种 ${{current.currency||'USD'}}</div>`;return `<div class="plan-card"><h3>${{esc(p.label)}}</h3><div class="price">${{cash(shown(current))}} / ${{current.cycle==='year'?'年':'月'}}</div>${{rows}}<div class="muted">历史计划 ${{history.length}} 条</div></div>`}}).join('')}}
+function chartProviders(){{return DATA.providers.filter(p=>p.has_data)}}function focusProvider(providerId){{document.querySelectorAll('path.series').forEach(path=>{{let active=path.dataset.provider===providerId;path.style.opacity=active?'1':'.16';path.setAttribute('stroke-width',active?'5':'2')}})}}function clearProviderFocus(){{document.querySelectorAll('path.series').forEach(path=>{{path.style.opacity='1';path.setAttribute('stroke-width','3')}})}}function legend(id){{$(id).innerHTML=chartProviders().map(p=>`<span class="legend-item" tabindex="0" data-provider="${{esc(p.id)}}" style="cursor:pointer;padding:4px 7px;border-radius:7px"><i class="dot" style="background:${{p.color}}"></i>${{esc(p.label)}}</span>`).join('');$(id).querySelectorAll('.legend-item').forEach(item=>{{item.onmouseenter=item.onfocus=()=>focusProvider(item.dataset.provider);item.onmouseleave=item.onblur=clearProviderFocus}})}}
+function series(type){{return chartProviders().map(p=>{{let hasPriced=p.totals.tokens>p.totals.unpriced;return {{provider:p,values:p.daily.map(d=>{{if(type==='tokens')return d.tokens;let cost=dailyCost(p.plan,d.date),api=apiValue(d,d.date);return hasPriced&&cost&&api!==null?api/cost:null}})}}}})}}
+function chart(id,type){{let svg=$(id),w=1100,h=300,l=64,r=20,t=18,b=38,iw=w-l-r,ih=h-t-b,all=series(type),finite=all.flatMap(s=>s.values.filter(v=>v!==null)),max=Math.max(1,...finite),x=i=>l+(DATA.days.length===1?0:i*iw/(DATA.days.length-1)),y=v=>t+ih-v/max*ih;let grid=[0,.25,.5,.75,1].map(k=>`<line class="gridline" x1="${{l}}" y1="${{y(max*k)}}" x2="${{w-r}}" y2="${{y(max*k)}}"/><text class="tick" x="4" y="${{y(max*k)+4}}">${{type==='tokens'?Math.round(max*k).toLocaleString():(max*k).toFixed(1)+'×'}}</text>`).join('');let paths=all.map(s=>{{let parts=[],open=false,points=[];s.values.forEach((v,i)=>{{if(v===null){{open=false;return}}parts.push(`${{open?'L':'M'}}${{x(i).toFixed(1)}} ${{y(v).toFixed(1)}}`);points.push(`<circle cx="${{x(i)}}" cy="${{y(v)}}" r="${{finite.length===1?5:2.6}}" fill="${{s.provider.color}}"/>`);open=true}});return parts.length?`<g data-provider="${{esc(s.provider.id)}}"><path class="series" data-provider="${{esc(s.provider.id)}}" d="${{parts.join(' ')}}" fill="none" stroke="${{s.provider.color}}" stroke-width="3"/>${{points.join('')}}</g>`:''}}).join('');let labels=DATA.days.map((d,i)=>i===0||(DATA.days.length-1-i)%3===0?`<text class="tick" x="${{x(i)}}" y="292" text-anchor="middle">${{d.slice(5)}}${{i===DATA.days.length-1?'（今日）':''}}</text>`:'').join('');svg.innerHTML=grid+paths+`<line class="hoverline" visibility="hidden" x1="0" y1="${{t}}" x2="0" y2="${{t+ih}}"/><rect class="hit-area" x="${{l}}" y="${{t}}" width="${{iw}}" height="${{ih}}" fill="transparent" style="pointer-events:all"/>`+labels;let hit=svg.querySelector('.hit-area');hit.onmousemove=e=>{{let bounds=hit.getBoundingClientRect(),fraction=(e.clientX-bounds.left)/bounds.width,i=Math.max(0,Math.min(DATA.days.length-1,Math.round(fraction*(DATA.days.length-1)))),date=DATA.days[i],line=svg.querySelector('.hoverline');line.setAttribute('x1',x(i));line.setAttribute('x2',x(i));line.setAttribute('visibility','visible');let rows=chartProviders().map(p=>{{let d=p.daily[i];if(type==='tokens')return `<span style="color:${{p.color}}">${{esc(p.label)}}</span>：${{num(d.tokens)}} Token`;let sub=dailyCost(p.plan,date),api=apiValue(d,date),priced=p.totals.tokens>p.totals.unpriced,ratio=priced&&sub&&api!==null?api/sub:null,status=!sub?'无生效计划':!priced?'模型未计价':ratio===null?'汇率不可用':ratio.toFixed(2)+'×';return `<span style="color:${{p.color}}">${{esc(p.label)}}</span>：${{status}}<br>API ${{cash(api)}} · 日成本 ${{cash(sub)}}`}}).join('<br>');$('tip').innerHTML=`${{date}}<br>${{rows}}`;$('tip').style.display='block';$('tip').style.left=Math.min(e.clientX+14,window.innerWidth-260)+'px';$('tip').style.top=(e.clientY+14)+'px'}};hit.onmouseleave=()=>{{svg.querySelector('.hoverline').setAttribute('visibility','hidden');$('tip').style.display='none'}}}}
+function renderDetails(){{$('tabs').style.gridTemplateColumns=`repeat(${{Math.max(1,DATA.providers.length)}},minmax(0,1fr))`;$('tabs').innerHTML=DATA.providers.map((p,i)=>`<button class="tab ${{i===0?'active':''}}" data-id="${{esc(p.id)}}">${{esc(p.label)}}</button>`).join('');$('details').innerHTML=DATA.providers.map((p,i)=>{{let t=p.totals,subscription=p.daily.reduce((sum,d)=>sum+(dailyCost(p.plan,d.date)||0),0),api=aggregateValue(t,'cost'),hasPriced=t.tokens>t.unpriced,multiple=subscription&&hasPriced&&api!==null?api/subscription:null,rows=p.models.map(m=>{{let modelCost=aggregateValue(m,'cost'),deepseekCost=aggregateValue(m,'deepseek_cost'),estimate=m.pricing_model?`<span class="hint" data-tip="Auto 无法确认实际路由，按当前订阅最低价模型 ${{esc(m.pricing_model)}} 估算">?</span>`:(m.estimated?'（估算）':'');return `<tr><td>${{esc(m.model)}}${{estimate}}</td><td>${{num(m.input)}}</td><td>${{num(m.output)}}</td><td>${{num(m.cached)}}</td><td>${{num(m.tokens)}}</td><td>${{m.cost===null?'未公开价格':cash(modelCost)}}</td><td>${{m.deepseek_tier?`${{cash(deepseekCost)}}<span class="hint" data-tip="${{m.deepseek_tier==='pro'?'对应 DeepSeek V4 Pro':'对应 DeepSeek V4 Flash'}}">?</span>`:'—'}}</td></tr>`}}).join('')||'<tr><td colspan="7" class="empty">本机没有可解析记录</td></tr>';return `<div class="detail ${{i===0?'active':''}}" data-id="${{esc(p.id)}}"><div class="detail-summary"><div class="metric-card"><div class="muted">最近 {days} 天总 Token</div><div class="metric">${{num(t.tokens)}}</div></div><div class="metric-card"><div class="muted">最近 {days} 天 API 等价价值</div><div class="metric">${{cash(api)}}</div></div><div class="metric-card"><div class="muted">最近 {days} 天有效订阅成本<span class="hint" data-tip="按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。">?</span></div><div class="metric">${{cash(subscription)}}</div></div><div class="metric-card"><div class="muted">最近 {days} 天同区间价值倍数</div><div class="metric">
+${{multipleText(multiple)}}
+</div></div><div class="metric-card"><div class="muted">缓存命中率</div><div class="metric">${{p.cache_hit_rate===null?'—':(p.cache_hit_rate*100).toFixed(1)+'%'}}</div></div><div class="metric-card"><div class="muted">对应 DeepSeek 成本<span class="hint" data-tip="以 DeepSeek 定价核算的成本，缓存命中率已计入">?</span></div><div class="metric">${{p.deepseek_cost===null?'—':cash(aggregateValue(p,'deepseek_cost'))}}</div></div></div><table><thead><tr><th>模型</th><th>输入</th><th>输出</th><th>缓存输入</th><th>总 Token</th><th>API 等价价值</th><th>对应 DeepSeek</th></tr></thead><tbody>${{rows}}</tbody></table></div>`}}).join('');document.querySelectorAll('.tab').forEach(tab=>tab.onclick=()=>{{document.querySelectorAll('.tab,.detail').forEach(x=>x.classList.remove('active'));tab.classList.add('active');document.querySelector(`.detail[data-id="${{CSS.escape(tab.dataset.id)}}"]`).classList.add('active')}})}}
+$('save').onclick=async()=>{{let provider=$('provider').value,cycle=$('cycle').value,start=$('start').value,amount=Number($('amount').value);if(!start||!(amount>0))return;let candidate={{provider,start_date:start,cycle,amount,currency:displayCurrency}};try{{let response=await fetch('http://127.0.0.1:17653/plans',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(candidate)}});if(!response.ok)throw new Error();let result=await response.json();plans=result.plans;$('start').value='';$('amount').value='';renderPlans();renderSummary();chart('ratio','ratio');renderDetails()}}catch{{alert('本机应用未运行，订阅计划没有保存')}}}};
+async function setCurrency(currency){{if(currency==='CNY'&&!DATA.fx.latest_rate_date)return;displayCurrency=currency;document.querySelectorAll('.currency-switch button').forEach(button=>button.classList.toggle('active',button.dataset.currency===currency));$('amount-label').textContent=`订阅金额（${{currency}}）`;$('fx-note').textContent=DATA.fx.latest_rate_date?`汇率来源：ECB · 最新参考日期 ${{DATA.fx.latest_rate_date}} · 历史金额按每日参考汇率换算`:'汇率尚未取得，当前只能显示 USD';renderPlans();renderSummary();chart('ratio','ratio');renderDetails();try{{await fetch('http://127.0.0.1:17653/settings',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{action:'set_display_currency',value:currency}})}})}}catch{{}}}}
+document.querySelectorAll('.currency-switch button').forEach(button=>button.onclick=()=>setCurrency(button.dataset.currency));if(!DATA.fx.latest_rate_date)$('currency-cny').disabled=true;
+$('refresh-local').onclick=async()=>{{let status=$('refresh-status');status.textContent='正在更新…';try{{let response=await fetch('http://127.0.0.1:17653/refresh',{{method:'POST'}});if(!response.ok)throw new Error();status.textContent='更新完成，正在打开本机报表';setTimeout(()=>location.href='http://127.0.0.1:17653/report',350)}}catch{{status.textContent='本机应用未运行'}}}};let reportVersion=0;async function syncLanguage(){{try{{let response=await fetch('http://127.0.0.1:17653/state?ts='+Date.now(),{{cache:'no-store'}});if(!response.ok)return;let state=await response.json(),current=document.documentElement.lang;if(reportVersion&&state.report_version!==reportVersion&&state.language!==current)location.replace('http://127.0.0.1:17653/report?ts='+Date.now());reportVersion=state.report_version}}catch{{}}}}setInterval(syncLanguage,1000);syncLanguage();legend('token-legend');legend('ratio-legend');chart('tokens','tokens');setCurrency(displayCurrency);document.body.addEventListener('mouseover',e=>{{let h=e.target.closest('.hint');if(!h)return;let r=h.getBoundingClientRect(),box=$('tip');box.textContent=h.dataset.tip;box.style.display='block';box.style.left=Math.min(r.left,window.innerWidth-260)+'px';box.style.top=(r.bottom+8)+'px'}});document.body.addEventListener('mouseout',e=>{{if(e.target.closest('.hint'))$('tip').style.display='none'}});</script></body></html>'''
 
 
 def collect_usages(
@@ -706,6 +808,8 @@ def collect_usages(
     claude_projects: Path = LOCAL_CLAUDE_PROJECTS,
     gemini_sessions: Path = LOCAL_GEMINI_SESSIONS,
     grok_sessions: Path = LOCAL_GROK_SESSIONS,
+    minimax_database: Path = LOCAL_MINIMAX_DB,
+    enabled_providers: list[str] | tuple[str, ...] | None = None,
 ) -> tuple[list[Usage], dict[str, int]]:
     configured = {(item["provider"], item["surface"]): Path(item["path"]) for item in load_configured_sources()}
     codex_sessions = configured.get(("chatgpt", "chatgpt-desktop"), codex_sessions)
@@ -713,12 +817,17 @@ def collect_usages(
     gemini_sessions = configured.get(("gemini", "gemini-cli"), gemini_sessions)
     grok_sessions = configured.get(("grok", "grok-local"), grok_sessions)
     since = report_today() - dt.timedelta(days=days - 1)
-    codex_usages, codex_files = parse_codex(codex_sessions, since)
-    claude_usages, claude_files = parse_claude_code(claude_projects, since)
-    gemini_usages, gemini_files = parse_gemini_cli(gemini_sessions, since)
-    grok_usages, grok_files = parse_grok_build(grok_sessions, since)
-    source_files = {"Codex": codex_files, "Claude Code": claude_files, "Gemini CLI": gemini_files, "Grok Build": grok_files}
-    return codex_usages + claude_usages + gemini_usages + grok_usages, source_files
+    enabled = set(DEFAULT_ENABLED_PROVIDERS if enabled_providers is None else enabled_providers)
+    codex_usages, codex_files = parse_codex(codex_sessions, since) if "Codex" in enabled else ([], 0)
+    claude_usages, claude_files = parse_claude_code(claude_projects, since) if "Claude Code" in enabled else ([], 0)
+    gemini_usages, gemini_files = parse_gemini_cli(gemini_sessions, since) if "Gemini CLI" in enabled else ([], 0)
+    grok_usages, grok_files = parse_grok_build(grok_sessions, since) if "Grok Build" in enabled else ([], 0)
+    minimax_usages, minimax_files = parse_minimax(minimax_database, since) if "MiniMax" in enabled else ([], 0)
+    source_files = {
+        "Codex": codex_files, "Claude Code": claude_files, "Gemini CLI": gemini_files,
+        "Grok Build": grok_files, "MiniMax": minimax_files, "Kimi": 0, "GLM": 0, "Bailian": 0,
+    }
+    return codex_usages + claude_usages + gemini_usages + grok_usages + minimax_usages, source_files
 
 
 def generate_report(days: int = 30, output: Path = DEFAULT_OUTPUT, pricing_path: Path = DEFAULT_PRICING, language: str = "zh-CN") -> Path:

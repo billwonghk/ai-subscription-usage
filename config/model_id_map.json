@@ -28,5 +28,16 @@
   "gemini-2.5-flash": "google/gemini-2.5-flash",
   "_comment_deepseek": "Reference prices only (not a local session model) - used by the DeepSeek cost comparison feature. See config/deepseek_tier_map.json for which local models compare against which tier.",
   "deepseek-v4-flash": "deepseek/deepseek-v4-flash",
-  "deepseek-v4-pro": "deepseek/deepseek-v4-pro"
+  "deepseek-v4-pro": "deepseek/deepseek-v4-pro",
+  "minimax/MiniMax-M3": "minimax/minimax-m3",
+  "minimax/MiniMax-M2.7": "minimax/minimax-m2.7",
+  "moonshotai/kimi-k3": "moonshotai/kimi-k3",
+  "moonshotai/kimi-k2.7-code": "moonshotai/kimi-k2.7-code",
+  "z-ai/glm-5.3": "z-ai/glm-5.3",
+  "z-ai/glm-5.2": "z-ai/glm-5.2",
+  "z-ai/glm-5-turbo": "z-ai/glm-5-turbo",
+  "z-ai/glm-4.7": "z-ai/glm-4.7",
+  "qwen/qwen3.8-flash": "qwen/qwen3.8-flash",
+  "qwen/qwen3.7-plus": "qwen/qwen3.7-plus",
+  "_comment_qwen38max": "The official Alibaba API model id qwen3.8-max uses the verified Alibaba Cloud China price in pricing.json and is intentionally excluded from OpenRouter auto-refresh. The old qwen3.8-max-preview id is retained only as a runtime alias."
 }

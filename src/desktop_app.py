@@ -19,15 +19,17 @@ import pystray
 from PIL import Image, ImageDraw
 
 if sys.platform == "darwin":
+    import AppKit
     from PyObjCTools import AppHelper
 
 import ai_usage_report
 import autostart
+import fx_rates
 from diagnostics import diagnostic_payload, save_pending, send_diagnostic
 from i18n import SUPPORTED, load_messages, system_language
 from report_i18n import localize_html
 from updater import latest_release, update_pricing
-from help_page import write_help
+from help_page import AI_PROMPT, write_help
 from settings_page import REFRESH_HOURS_CHOICES, render_settings
 from source_discovery import configure_source, doctor_report, load_configured_sources
 from runtime_data import app_data_root, initialize_user_data, load_subscriptions, save_subscriptions
@@ -43,19 +45,80 @@ PRICING_PATH = CONFIG_ROOT / "pricing.json"
 SETTINGS_PATH = CONFIG_ROOT / "settings.json"
 SUBSCRIPTIONS_PATH = CONFIG_ROOT / "subscriptions.json"
 PENDING_DIAGNOSTIC = CONFIG_ROOT / "pending-diagnostic.json"
+FX_RATES_PATH = CONFIG_ROOT / "fx-rates.json"
 LOCAL_PORT = 17653
 ALLOWED_ORIGINS = {"null", "https://token.report.test.apeai.online", f"http://127.0.0.1:{LOCAL_PORT}"}
-PLAN_PROVIDERS = {"ChatGPT": "Codex", "Claude": "Claude", "Gemini": "Gemini", "Grok": "Grok"}
+PLAN_PROVIDERS = {
+    "ChatGPT": "Codex", "Claude": "Claude", "Gemini": "Gemini", "Grok": "Grok",
+    "MiniMax": "MiniMax", "Kimi": "Kimi", "GLM": "GLM", "阿里百炼": "Bailian",
+}
+PROVIDER_SETTINGS = {
+    "Codex": {"label": "ChatGPT", "discovery": "chatgpt", "surface": "chatgpt-desktop"},
+    "Claude Code": {"label": "Claude", "discovery": "claude", "surface": "claude-code"},
+    "Gemini CLI": {"label": "Gemini", "discovery": "gemini", "surface": "gemini-cli"},
+    "Grok Build": {"label": "Grok", "discovery": "grok", "surface": "grok-local"},
+    "MiniMax": {"label": "MiniMax", "discovery": "minimax", "surface": "minimax-agent"},
+    "Kimi": {"label": "Kimi", "discovery": "kimi", "surface": "kimi-code"},
+    "GLM": {"label": "GLM", "discovery": "glm", "surface": "glm-local"},
+    "Bailian": {"label": "阿里百炼", "discovery": "bailian", "surface": "bailian-local"},
+}
 SETTINGS_GEAR = "⚙️" if sys.platform == "darwin" else "⚙"
+DEFAULT_PROVIDER_SELECTION = ("Codex", "Claude Code", "Gemini CLI", "Grok Build")
+
+
+if sys.platform == "darwin":
+    class MacTrayIcon(pystray.Icon):
+        """Use left click for the default action and right click for the menu."""
+
+        def _update_menu(self) -> None:
+            callbacks = []
+            menu = self._create_menu(self.menu, callbacks)
+            self._menu_handle = (menu, callbacks) if menu else None
+            self._status_item.setMenu_(None)
+            self._status_item.button().sendActionOn_(
+                AppKit.NSEventMaskLeftMouseUp | AppKit.NSEventMaskRightMouseUp
+            )
+
+        def __call__(self) -> None:
+            event = AppKit.NSApp.currentEvent()
+            if event is not None and event.type() == AppKit.NSEventTypeRightMouseUp:
+                if self._menu_handle:
+                    self._status_item.popUpStatusItemMenu_(self._menu_handle[0])
+                return
+            super().__call__()
+else:
+    MacTrayIcon = pystray.Icon
 
 
 def load_settings() -> dict:
-    defaults = {"language": system_language(), "telemetry_consent": False, "telemetry_endpoint": "", "price_manifest_url": "https://raw.githubusercontent.com/billwonghk/ai-subscription-usage/main/config/pricing-manifest.json", "releases_url": "https://api.github.com/repos/billwonghk/ai-subscription-usage/releases/latest", "refresh_hours": 24, "update_check_hours": 24, "onboarding_complete": False}
+    defaults = {"language": system_language(), "display_currency": "USD", "telemetry_consent": False, "telemetry_endpoint": "", "price_manifest_url": "https://raw.githubusercontent.com/billwonghk/ai-subscription-usage/main/config/pricing-manifest.json", "releases_url": "https://api.github.com/repos/billwonghk/ai-subscription-usage/releases/latest", "refresh_hours": 24, "update_check_hours": 24, "onboarding_complete": False, "enabled_providers": list(DEFAULT_PROVIDER_SELECTION)}
     try:
         loaded = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return defaults
-    return {**defaults, **loaded} if isinstance(loaded, dict) else defaults
+    if not isinstance(loaded, dict):
+        return defaults
+    settings = {**defaults, **loaded}
+    configured = settings.get("enabled_providers")
+    if not isinstance(configured, list):
+        configured = list(DEFAULT_PROVIDER_SELECTION)
+    settings["enabled_providers"] = [provider for provider in PROVIDER_SETTINGS if provider in configured]
+    if settings.get("display_currency") not in {"USD", "CNY"}:
+        settings["display_currency"] = "USD"
+    return settings
+
+
+def provider_states(settings: dict) -> list[dict]:
+    enabled = set(settings.get("enabled_providers", PROVIDER_SETTINGS))
+    discovered = doctor_report()["discovered_sources"]
+    statuses: dict[tuple[str, str], str] = {}
+    for source in discovered:
+        statuses[(source["provider"], source["surface"])] = source["status"]
+    result = []
+    for provider, meta in PROVIDER_SETTINGS.items():
+        status = statuses.get((meta["discovery"], meta["surface"]), "not_found")
+        result.append({"id": provider, "label": meta["label"], "enabled": provider in enabled, "status": status, "color": ai_usage_report.PROVIDER_META[provider]["color"]})
+    return result
 
 
 def save_settings(settings: dict) -> None:
@@ -88,7 +151,8 @@ def write_help_page(language: str) -> None:
 def save_subscription_plan(plan: dict) -> list[dict]:
     provider, cycle = plan.get("provider"), plan.get("cycle")
     start_date, amount = plan.get("start_date"), plan.get("amount")
-    if provider not in PLAN_PROVIDERS or cycle not in {"month", "year"}:
+    currency = str(plan.get("currency", "USD")).upper()
+    if provider not in PLAN_PROVIDERS or cycle not in {"month", "year"} or currency not in {"USD", "CNY"}:
         raise ValueError("unsupported plan")
     try:
         dt.date.fromisoformat(start_date)
@@ -102,10 +166,32 @@ def save_subscription_plan(plan: dict) -> list[dict]:
     key = PLAN_PROVIDERS[provider]
     subscription = subscriptions.setdefault(key, {"label": f"{provider} subscription", "plans": []})
     entries = subscription.setdefault("plans", [])
-    field = "monthly_usd" if cycle == "month" else "annual_usd"
     entries[:] = [entry for entry in entries if not (isinstance(entry, dict) and entry.get("start_date") == start_date)]
-    entries.append({"start_date": start_date, field: amount})
+    entries.append({"start_date": start_date, "amount": amount, "currency": currency, "cycle": cycle})
     entries.sort(key=lambda entry: str(entry.get("start_date", "")))
+    save_subscriptions(SUBSCRIPTIONS_PATH, subscriptions)
+    return ai_usage_report.subscription_plan_data(pricing)
+
+
+def delete_subscription_plan(plan: dict) -> list[dict]:
+    provider = plan.get("provider")
+    start_date = plan.get("start_date")
+    if provider not in PLAN_PROVIDERS or not isinstance(start_date, str):
+        raise ValueError("unsupported plan")
+    try:
+        dt.date.fromisoformat(start_date)
+    except ValueError:
+        raise ValueError("invalid plan") from None
+    pricing = load_runtime_pricing()
+    subscriptions = pricing.setdefault("subscriptions", {})
+    subscription = subscriptions.get(PLAN_PROVIDERS[provider])
+    entries = subscription.get("plans") if isinstance(subscription, dict) else None
+    if not isinstance(entries, list):
+        raise ValueError("plan not found")
+    remaining = [entry for entry in entries if not (isinstance(entry, dict) and entry.get("start_date") == start_date)]
+    if len(remaining) == len(entries):
+        raise ValueError("plan not found")
+    subscription["plans"] = remaining
     save_subscriptions(SUBSCRIPTIONS_PATH, subscriptions)
     return ai_usage_report.subscription_plan_data(pricing)
 
@@ -172,7 +258,9 @@ class DesktopApp:
     def refresh(self) -> list[str]:
         try:
             pricing = load_runtime_pricing()
-            usages, source_files = ai_usage_report.collect_usages(30)
+            fx_cache = fx_rates.refresh_if_due(FX_RATES_PATH)
+            enabled_providers = self.settings.get("enabled_providers", list(PROVIDER_SETTINGS))
+            usages, source_files = ai_usage_report.collect_usages(30, enabled_providers=enabled_providers)
             unknown = sorted({item.model for item in usages if ai_usage_report.api_equivalent_cost(item, pricing) is None})
             newly_found = unknown
             auto_updated_version = None
@@ -184,7 +272,7 @@ class DesktopApp:
                 except Exception:
                     auto_updated_version = None
             REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-            base_report = ai_usage_report.render_dashboard(usages, 30, source_files, pricing, app_version=APP_VERSION, deepseek_tiers=load_deepseek_tiers())
+            base_report = ai_usage_report.render_dashboard(usages, 30, source_files, pricing, app_version=APP_VERSION, deepseek_tiers=load_deepseek_tiers(), enabled_providers=enabled_providers, display_currency=self.settings["display_currency"], fx_cache=fx_cache)
             BASE_REPORT_PATH.write_text(base_report, encoding="utf-8")
             REPORT_PATH.write_text(localize_html(base_report, self.settings["language"]), encoding="utf-8")
             write_help_page(self.settings["language"])
@@ -261,6 +349,19 @@ class DesktopApp:
             self._refresh_timer.cancel()
         self._schedule_refresh()
 
+    def toggle_provider(self, provider: str) -> bool:
+        if provider not in PROVIDER_SETTINGS:
+            raise ValueError("unsupported provider")
+        enabled = list(self.settings.get("enabled_providers", PROVIDER_SETTINGS))
+        if provider in enabled:
+            enabled.remove(provider)
+        else:
+            enabled.append(provider)
+        self.settings["enabled_providers"] = [item for item in PROVIDER_SETTINGS if item in enabled]
+        save_settings(self.settings)
+        threading.Thread(target=self.refresh, name="provider-refresh", daemon=True).start()
+        return provider in self.settings["enabled_providers"]
+
     def clear_diagnostics(self) -> None:
         if PENDING_DIAGNOSTIC.exists():
             PENDING_DIAGNOSTIC.unlink()
@@ -308,7 +409,8 @@ class DesktopApp:
                     self.wfile.write(body)
                     return
                 if self.path.startswith("/settings"):
-                    body = render_settings(app.settings["language"], app.settings, autostart.is_enabled(), autostart.is_supported(), APP_VERSION).encode()
+                    plans = ai_usage_report.subscription_plan_data(load_runtime_pricing())
+                    body = render_settings(app.settings["language"], app.settings, autostart.is_enabled(), autostart.is_supported(), APP_VERSION, provider_states(app.settings), AI_PROMPT, plans).encode()
                     self.send_response(200)
                     self._cors()
                     self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -345,7 +447,9 @@ class DesktopApp:
                     if self.path == "/plans":
                         length = min(int(self.headers.get("Content-Length", "0")), 4096)
                         plan = json.loads(self.rfile.read(length))
-                        body = json.dumps({"ok": True, "plans": save_subscription_plan(plan)}).encode()
+                        saved_plans = save_subscription_plan(plan)
+                        app.refresh()
+                        body = json.dumps({"ok": True, "plans": saved_plans}).encode()
                     elif self.path == "/settings":
                         length = min(int(self.headers.get("Content-Length", "0")), 4096)
                         payload = json.loads(self.rfile.read(length))
@@ -359,11 +463,21 @@ class DesktopApp:
                             save_settings(app.settings)
                         elif action == "set_refresh_hours" and value in REFRESH_HOURS_CHOICES:
                             app.set_refresh_interval(int(value))
+                        elif action == "set_display_currency" and value in {"USD", "CNY"}:
+                            app.settings["display_currency"] = value
+                            save_settings(app.settings)
+                        elif action == "toggle_provider" and isinstance(value, str):
+                            enabled = app.toggle_provider(value)
+                            body = json.dumps({"ok": True, "provider": value, "enabled": enabled}).encode()
                         elif action == "open_data_folder":
                             app.open_data_folder()
                         elif action == "clear_diagnostics":
                             app.clear_diagnostics()
-                        body = json.dumps({"ok": True}).encode()
+                        elif action == "delete_plan" and isinstance(value, dict):
+                            delete_subscription_plan(value)
+                            app.refresh()
+                        if action != "toggle_provider":
+                            body = json.dumps({"ok": True}).encode()
                     else:
                         unknown = app.refresh()
                         body = json.dumps({"ok": True, "unpriced_models": unknown}).encode()
@@ -427,7 +541,7 @@ class DesktopApp:
         )
 
     def run(self) -> None:
-        self.icon = pystray.Icon("ai-subscription-usage", self._icon_image(), self.messages["app_name"])
+        self.icon = MacTrayIcon("ai-subscription-usage", self._icon_image(), self.messages["app_name"])
         self._start_http()
         if not self.settings.get("onboarding_complete"):
             self.settings["onboarding_complete"] = True

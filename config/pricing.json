@@ -10,8 +10,8 @@
     "Alibaba Token Plan qwen3.8-max": "https://help.aliyun.com/zh/model-studio/token-plan-personal-overview"
   },
   "schema_version": 2,
-  "price_version": "2026-08-29.mixed-sources",
-  "updated_at": "2026-08-29T00:00:00Z",
+  "price_version": "2026-08-30.auto-deepseek.2",
+  "updated_at": "2026-08-30T00:00:00Z",
   "model_aliases": {
     "MiniMax-M3": "minimax/MiniMax-M3",
     "minimax-m3": "minimax/MiniMax-M3",
@@ -119,11 +119,19 @@
           "cached_input_per_million": 0.01,
           "output_per_million": 0.6,
           "cache_write_input_per_million": 0.125,
-          "start_date": "2026-08-17"
+          "start_date": "2026-08-17",
+          "end_date": "2026-08-30"
+        },
+        {
+          "input_per_million": 0.2,
+          "cached_input_per_million": 0.02,
+          "output_per_million": 1.2,
+          "cache_write_input_per_million": 0.25,
+          "start_date": "2026-08-31"
         }
       ],
-      "source": "openrouter",
-      "updated_at": "2026-08-17"
+      "source": "openai",
+      "updated_at": "2026-08-30"
     },
     "gpt-5.5": {
       "input_per_million": 5.0,

@@ -67,9 +67,11 @@ def initialize_user_data(resource_root: Path) -> Path:
             bundled_pricing = json.loads(bundled_pricing_path.read_text(encoding="utf-8"))
             runtime_updated = str(runtime_pricing.get("updated_at", "")) if isinstance(runtime_pricing, dict) else ""
             bundled_updated = str(bundled_pricing.get("updated_at", "")) if isinstance(bundled_pricing, dict) else ""
+            runtime_version = str(runtime_pricing.get("price_version", "")) if isinstance(runtime_pricing, dict) else ""
+            bundled_version = str(bundled_pricing.get("price_version", "")) if isinstance(bundled_pricing, dict) else ""
         except (OSError, json.JSONDecodeError):
-            runtime_updated = bundled_updated = ""
-        if bundled_updated and bundled_updated > runtime_updated:
+            runtime_updated = bundled_updated = runtime_version = bundled_version = ""
+        if bundled_updated and (bundled_updated > runtime_updated or (bundled_updated == runtime_updated and bundled_version != runtime_version)):
             _backup(pricing_path, root / "backups" / f"pricing-update-{stamp}")
             shutil.copy2(bundled_pricing_path, pricing_path)
     schema_path = root / "data-schema.json"

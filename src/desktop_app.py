@@ -10,6 +10,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 import webbrowser
 import shutil
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -28,6 +29,7 @@ import fx_rates
 from diagnostics import diagnostic_payload, save_pending, send_diagnostic
 from i18n import SUPPORTED, load_messages, system_language
 from report_i18n import localize_html
+from report_view import should_open_new_report
 from updater import latest_release, update_pricing
 from help_page import AI_PROMPT, write_help
 from settings_page import REFRESH_HOURS_CHOICES, render_settings
@@ -35,7 +37,7 @@ from source_discovery import configure_source, doctor_report, load_configured_so
 from runtime_data import app_data_root, initialize_user_data, load_subscriptions, save_subscriptions
 
 
-APP_VERSION = "0.4.1"
+APP_VERSION = "0.4.2"
 CONFIG_ROOT = app_data_root()
 RESOURCE_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
 REPORT_PATH = CONFIG_ROOT / "ai-usage-report.html"
@@ -242,6 +244,7 @@ class DesktopApp:
         self.server: ThreadingHTTPServer | None = None
         self.icon: pystray.Icon | None = None
         self._refresh_timer: threading.Timer | None = None
+        self._last_report_view = 0.0
 
     @staticmethod
     def _icon_image() -> Image.Image:
@@ -368,9 +371,9 @@ class DesktopApp:
         notify(self.messages["app_name"], self.messages["diagnostics_cleared"])
 
     def open_report(self) -> None:
-        if not REPORT_PATH.exists():
-            self.refresh()
-        webbrowser.open(REPORT_PATH.as_uri())
+        self.refresh()
+        if should_open_new_report(self._last_report_view):
+            webbrowser.open(f"http://127.0.0.1:{LOCAL_PORT}/report")
 
     def open_help(self) -> None:
         write_help_page(self.settings["language"])
@@ -385,6 +388,8 @@ class DesktopApp:
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self) -> None:
                 if self.path.startswith("/state"):
+                    if "page=report" in self.path:
+                        app._last_report_view = time.monotonic()
                     body = json.dumps({
                         "language": app.settings["language"],
                         "report_version": REPORT_PATH.stat().st_mtime_ns if REPORT_PATH.exists() else 0,
@@ -422,6 +427,7 @@ class DesktopApp:
                 if not self.path.startswith("/report") or not REPORT_PATH.exists():
                     self.send_error(404)
                     return
+                app._last_report_view = time.monotonic()
                 body = REPORT_PATH.read_bytes()
                 self.send_response(200)
                 self._cors()

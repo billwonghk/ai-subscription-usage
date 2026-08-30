@@ -4,11 +4,14 @@ import sqlite3
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import ai_usage_report as report
 import fx_rates
+import runtime_data
+from report_view import should_open_new_report
 from report_i18n import localize_html
 from help_page import render_help
 from settings_page import render_settings
@@ -339,12 +342,44 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(payload["latest_rate_date"], "2026-08-28")
 
     def test_dashboard_contains_currency_switch_and_daily_fx(self):
-        usage = report.Usage("MiniMax", "minimax/MiniMax-M3", "2026-08-29", input_tokens=1_000_000)
+        today = report.report_today().isoformat()
+        usage = report.Usage("MiniMax", "minimax/MiniMax-M3", today, input_tokens=1_000_000)
         pricing = {"models": {"minimax/MiniMax-M3": {"input_per_million": 1, "cached_input_per_million": 1, "output_per_million": 1}}, "subscriptions": {}}
-        page = report.render_dashboard([usage], 1, {"MiniMax": 1}, pricing, enabled_providers=["MiniMax"], display_currency="CNY", fx_cache={"rates": {"2026-08-29": 7.0}})
+        page = report.render_dashboard([usage], 1, {"MiniMax": 1}, pricing, enabled_providers=["MiniMax"], display_currency="CNY", fx_cache={"rates": {today: 7.0}})
         self.assertIn('data-currency="USD"', page)
         self.assertIn('data-currency="CNY"', page)
         self.assertIn('"cost_cny": 7.0', page)
+
+    def test_report_page_heartbeats_and_reloads_when_report_changes(self):
+        page = report.render_dashboard([], 1, {}, {"models": {}, "subscriptions": {}}, enabled_providers=[])
+        self.assertIn("/state?page=report&ts=", page)
+        self.assertIn("state.report_version!==reportVersion", page)
+        self.assertNotIn("state.language!==current", page)
+
+    def test_active_report_page_is_reused_and_stale_page_is_reopened(self):
+        self.assertFalse(should_open_new_report(98.0, now=100.0))
+        self.assertTrue(should_open_new_report(96.0, now=100.0))
+
+    def test_newer_bundled_pricing_replaces_runtime_pricing_without_touching_subscriptions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            resources = root / "resources"
+            (resources / "config").mkdir(parents=True)
+            (resources / "config" / "pricing.json").write_text(json.dumps({
+                "updated_at": "2026-08-30T00:00:00Z", "price_version": "new", "models": {},
+            }))
+            data = root / "data"
+            data.mkdir()
+            (data / "pricing.json").write_text(json.dumps({
+                "updated_at": "2026-08-30T00:00:00Z", "price_version": "old", "models": {},
+            }))
+            subscriptions = {"schema_version": 2, "subscriptions": {"MiniMax": {"plans": [{"amount": 430}]}}}
+            (data / "subscriptions.json").write_text(json.dumps(subscriptions))
+            with mock.patch.dict("os.environ", {"AI_SUBSCRIPTION_USAGE_DATA_DIR": str(data)}):
+                runtime_data.initialize_user_data(resources)
+            updated = json.loads((data / "pricing.json").read_text())
+            self.assertEqual(updated["price_version"], "new")
+            self.assertEqual(json.loads((data / "subscriptions.json").read_text()), subscriptions)
 
     def test_pricing_alias_and_auto_fallback_are_narrow_and_explicit(self):
         pricing = {
@@ -386,6 +421,23 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(report.pricing_model_for_usage(after_retirement, pricing), ("gpt-5.6-luna", True))
         self.assertEqual(report.api_equivalent_cost(before_retirement, pricing), 0.75)
         self.assertEqual(report.api_equivalent_cost(after_retirement, pricing), 0.1)
+
+    def test_dashboard_auto_estimate_label_uses_record_date_target(self):
+        pricing = {
+            "models": {
+                "gpt-old-low": {"input_per_million": 1, "cached_input_per_million": 1, "output_per_million": 1},
+                "gpt-new-low": {"input_per_million": 2, "cached_input_per_million": 2, "output_per_million": 2},
+                "deepseek-v4-flash": {"input_per_million": 1, "cached_input_per_million": 1, "output_per_million": 1},
+            },
+            "auto_fallbacks": {"Codex": {"periods": [
+                {"start_date": "2000-01-01", "end_date": "2026-08-30", "model": "gpt-old-low"},
+                {"start_date": "2026-08-31", "model": "gpt-new-low"},
+            ]}},
+        }
+        usage = report.Usage("Codex", "codex-auto-review", report.report_today().isoformat(), input_tokens=100)
+        page = report.render_dashboard([usage], 1, {"Codex": 1}, pricing, deepseek_tiers={})
+        expected = "gpt-old-low" if report.report_today().isoformat() <= "2026-08-30" else "gpt-new-low"
+        self.assertIn(f'"pricing_model": "{expected}"', page)
 
     def test_auto_always_uses_deepseek_flash_and_peak_time_doubles_cost(self):
         pricing = {

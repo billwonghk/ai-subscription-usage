@@ -1,5 +1,5 @@
 {
-  "price_version": "2026-08-29.mixed-sources",
+  "price_version": "2026-08-30.auto-deepseek.2",
   "pricing_url": "https://raw.githubusercontent.com/billwonghk/ai-subscription-usage/main/config/pricing.json",
-  "sha256": "6d9b75691c489c2fed53a8e9cd868d57c6cb2df803ddf4cd2ce5f49065c6aaa9"
+  "sha256": "5d012013c9036c401f51d92b56afff7a90579cf2073c01c97e1ee117f0343e41"
 }

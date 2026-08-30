@@ -713,6 +713,7 @@ def render_dashboard(
         priced_models: set[str] = set()
         deepseek_priced_models: set[str] = set()
         estimated_pricing_models: set[str] = set()
+        estimated_pricing_targets: dict[str, set[str]] = defaultdict(set)
         provider_input = provider_output = provider_cached = provider_tokens = provider_unpriced = 0
         provider_cost = 0.0
         provider_deepseek_cost = 0.0
@@ -721,9 +722,10 @@ def render_dashboard(
         for item in items:
             if item.date not in daily:
                 continue
-            _, pricing_estimated = pricing_model_for_usage(item, pricing)
+            resolved_pricing_model, pricing_estimated = pricing_model_for_usage(item, pricing)
             if pricing_estimated:
                 estimated_pricing_models.add(item.model)
+                estimated_pricing_targets[item.model].add(resolved_pricing_model)
             cost = api_equivalent_cost(item, pricing)
             deepseek_cost = deepseek_equivalent_cost(item, pricing, deepseek_tiers)
             if deepseek_cost is not None:
@@ -771,8 +773,8 @@ def render_dashboard(
         model_data = []
         for item in sorted(models.values(), key=lambda value: value.total_tokens, reverse=True):
             model_cost = model_costs[item.model] if item.model in priced_models else None
-            pricing_model, _ = pricing_model_for_usage(item, pricing)
             deepseek_tier = deepseek_tier_for_usage(item, pricing, deepseek_tiers) if item.model in deepseek_priced_models else None
+            pricing_targets = sorted(estimated_pricing_targets[item.model])
             model_data.append({
                 "model": item.model,
                 "input": item.input_tokens,
@@ -782,7 +784,7 @@ def render_dashboard(
                 "cost": model_cost,
                 "cost_cny": round(model_costs_cny[item.model], 8) if item.model in priced_models else None,
                 "estimated": item.is_estimate or item.model in estimated_pricing_models,
-                "pricing_model": pricing_model if item.model in estimated_pricing_models else None,
+                "pricing_model": " / ".join(pricing_targets) if pricing_targets else None,
                 "deepseek_cost": round(model_deepseek_costs[item.model], 8) if deepseek_tier else None,
                 "deepseek_cost_cny": round(model_deepseek_costs_cny[item.model], 8) if deepseek_tier else None,
                 "deepseek_tier": deepseek_tier,
@@ -840,7 +842,7 @@ ${{multipleText(multiple)}}
 $('save').onclick=async()=>{{let provider=$('provider').value,cycle=$('cycle').value,start=$('start').value,amount=Number($('amount').value);if(!start||!(amount>0))return;let candidate={{provider,start_date:start,cycle,amount,currency:displayCurrency}};try{{let response=await fetch('http://127.0.0.1:17653/plans',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(candidate)}});if(!response.ok)throw new Error();let result=await response.json();plans=result.plans;$('start').value='';$('amount').value='';renderPlans();renderSummary();chart('ratio','ratio');renderDetails()}}catch{{alert('本机应用未运行，订阅计划没有保存')}}}};
 async function setCurrency(currency){{if(currency==='CNY'&&!DATA.fx.latest_rate_date)return;displayCurrency=currency;document.querySelectorAll('.currency-switch button').forEach(button=>button.classList.toggle('active',button.dataset.currency===currency));$('amount-label').textContent=`订阅金额（${{currency}}）`;$('fx-note').textContent=DATA.fx.latest_rate_date?`汇率来源：ECB · 最新参考日期 ${{DATA.fx.latest_rate_date}} · 历史金额按每日参考汇率换算`:'汇率尚未取得，当前只能显示 USD';renderPlans();renderSummary();chart('ratio','ratio');renderDetails();try{{await fetch('http://127.0.0.1:17653/settings',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{action:'set_display_currency',value:currency}})}})}}catch{{}}}}
 document.querySelectorAll('.currency-switch button').forEach(button=>button.onclick=()=>setCurrency(button.dataset.currency));if(!DATA.fx.latest_rate_date)$('currency-cny').disabled=true;
-$('refresh-local').onclick=async()=>{{let status=$('refresh-status');status.textContent='正在更新…';try{{let response=await fetch('http://127.0.0.1:17653/refresh',{{method:'POST'}});if(!response.ok)throw new Error();status.textContent='更新完成，正在打开本机报表';setTimeout(()=>location.href='http://127.0.0.1:17653/report',350)}}catch{{status.textContent='本机应用未运行'}}}};let reportVersion=0;async function syncLanguage(){{try{{let response=await fetch('http://127.0.0.1:17653/state?ts='+Date.now(),{{cache:'no-store'}});if(!response.ok)return;let state=await response.json(),current=document.documentElement.lang;if(reportVersion&&state.report_version!==reportVersion&&state.language!==current)location.replace('http://127.0.0.1:17653/report?ts='+Date.now());reportVersion=state.report_version}}catch{{}}}}setInterval(syncLanguage,1000);syncLanguage();legend('token-legend');legend('ratio-legend');chart('tokens','tokens');setCurrency(displayCurrency);document.body.addEventListener('mouseover',e=>{{let h=e.target.closest('.hint');if(!h)return;let r=h.getBoundingClientRect(),box=$('tip');box.textContent=h.dataset.tip;box.style.display='block';box.style.left=Math.min(r.left,window.innerWidth-260)+'px';box.style.top=(r.bottom+8)+'px'}});document.body.addEventListener('mouseout',e=>{{if(e.target.closest('.hint'))$('tip').style.display='none'}});</script></body></html>'''
+$('refresh-local').onclick=async()=>{{let status=$('refresh-status');status.textContent='正在更新…';try{{let response=await fetch('http://127.0.0.1:17653/refresh',{{method:'POST'}});if(!response.ok)throw new Error();status.textContent='更新完成，正在打开本机报表';setTimeout(()=>location.href='http://127.0.0.1:17653/report',350)}}catch{{status.textContent='本机应用未运行'}}}};let reportVersion=0;async function syncReport(){{try{{let response=await fetch('http://127.0.0.1:17653/state?page=report&ts='+Date.now(),{{cache:'no-store'}});if(!response.ok)return;let state=await response.json();if(reportVersion&&state.report_version!==reportVersion)location.replace('http://127.0.0.1:17653/report?ts='+Date.now());reportVersion=state.report_version}}catch{{}}}}setInterval(syncReport,1000);syncReport();legend('token-legend');legend('ratio-legend');chart('tokens','tokens');setCurrency(displayCurrency);document.body.addEventListener('mouseover',e=>{{let h=e.target.closest('.hint');if(!h)return;let r=h.getBoundingClientRect(),box=$('tip');box.textContent=h.dataset.tip;box.style.display='block';box.style.left=Math.min(r.left,window.innerWidth-260)+'px';box.style.top=(r.bottom+8)+'px'}});document.body.addEventListener('mouseout',e=>{{if(e.target.closest('.hint'))$('tip').style.display='none'}});</script></body></html>'''
 
 
 def collect_usages(

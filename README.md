@@ -97,7 +97,7 @@ Output is written to `outputs/ai-usage-report.html`. The "Refresh local data" bu
 
 ## macOS menu bar & Windows tray
 
-The desktop app provides: open report, refresh now, update model pricing, check for app updates, switch language, configuration & user guide, an anonymous-diagnostics toggle, and quit. On first launch it automatically opens the configuration & user guide, which shows local data-source detection status, diagnostic commands, and a safe configuration prompt you can copy to your own local AI assistant. By default it refreshes local data and checks the app version every 24 hours.
+The desktop app provides: open report, refresh now, update model pricing, check for app updates, switch language, configuration & user guide, an anonymous-diagnostics toggle, and quit. A left click refreshes the report and reuses an already-open report tab; it opens a new tab only when no report page is active. On first launch it opens the report. The configuration & user guide shows local data-source detection status, diagnostic commands, calculation rules, and a safe configuration prompt you can copy to your own local AI assistant. By default it refreshes local data and checks the app version every 24 hours.
 
 ## Auto-discovery & AI-assisted configuration
 
@@ -128,7 +128,7 @@ The desktop shell ships with English, French, German, Spanish, Simplified Chines
 
 `config/model_id_map.json` maps this project's local model names to their exact OpenRouter model id. `scripts/fetch_pricing.py` uses that map to pull current prices and rewrite `config/pricing.json` and `config/pricing-manifest.json`; `.github/workflows/update-pricing.yml` runs it automatically about once a week and commits only if a price actually changed. A genuine price change is recorded as a new dated period so past report dates keep using whatever rate was actually in effect back then. Models that already use a hand-written dated schedule are left untouched by the automation. When usage logs show a brand-new model name that isn't in the map yet, it's simply shown as unpriced until a line is added to `config/model_id_map.json` — the desktop app also tries an on-the-spot price refresh the moment it detects a new model.
 
-Each provider's detail tab also shows its cache-hit rate for the period, plus an estimated cost if the same usage had run on [DeepSeek](https://www.deepseek.com/) instead. Each model is matched to a DeepSeek V4 Flash or Pro tier by capability class (see `config/deepseek_tier_map.json`), using DeepSeek's own public pricing (also kept current via OpenRouter) and this period's real cache-hit/miss split — not a guessed ratio. Flagship models with no real DeepSeek equivalent are still compared against Pro, deliberately in DeepSeek's favor, so the comparison never overstates the case.
+Each provider's detail tab also shows its cache-hit rate for the period, plus an estimated cost if the same usage had run on [DeepSeek](https://www.deepseek.com/) instead. Explicit Auto records always use DeepSeek V4 Flash; MiniMax M3 uses V4 Pro and MiniMax M2.7 uses V4 Flash. Other models use the capability mapping in `config/deepseek_tier_map.json`. Records with exact timestamps use DeepSeek's Beijing-time peak windows; records without a timestamp use the off-peak rate. The calculation uses the period's real cache-hit/miss split, not a guessed ratio.
 
 ## Anonymous diagnostics
 

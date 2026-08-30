@@ -27,7 +27,7 @@ if sys.platform == "darwin":
         name="AI Subscription Usage.app",
         icon=str(root / "assets" / "app-icon.icns"),
         bundle_identifier="online.apeai.ai-subscription-usage",
-        info_plist={"LSUIElement": True, "NSHighResolutionCapable": True, "CFBundleShortVersionString": "0.4.1", "CFBundleVersion": "0.4.1"},
+        info_plist={"LSUIElement": True, "NSHighResolutionCapable": True, "CFBundleShortVersionString": "0.4.2", "CFBundleVersion": "0.4.2"},
     )
 else:
     exe = EXE(

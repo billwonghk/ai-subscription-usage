@@ -1,6 +1,7 @@
 """One-shot ownership tests and isolated lifecycle tests; no listening server."""
 import ast
 import json
+import io
 import os
 import subprocess
 import sys
@@ -102,6 +103,17 @@ class InstanceTests(unittest.TestCase):
 
 
 class CleanupTests(unittest.TestCase):
+    def test_diagnostic_json_works_with_windows_legacy_encoding(self):
+        data = {'schema_version': 1, 'provider': '\u963f\u91cc\u767e\u70bc'}
+        scope = production_definitions('command_line', sys=SimpleNamespace(argv=['app', '--doctor']),
+                                       json=json, ensure_runtime_files=Mock(), doctor_report=Mock(return_value=data))
+        buffer = io.BytesIO()
+        stream = io.TextIOWrapper(buffer, encoding='cp1252')
+        with patch('sys.stdout', stream):
+            self.assertTrue(scope['command_line']())
+        stream.flush()
+        self.assertEqual(json.loads(buffer.getvalue()), data)
+
     def app(self):
         server, icon, http_thread = Mock(), Mock(), Mock()
         http_thread.is_alive.return_value = True

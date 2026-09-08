@@ -56,16 +56,23 @@ jobs:
           fi
       - name: Windows diagnostics
         if: runner.os == 'Windows'
+        timeout-minutes: 2
         shell: pwsh
         run: |
-          $doctor = & "dist/AI Subscription Usage.exe" --doctor 2>&1 | Out-String
-          Write-Host "---- --doctor exit code: $LASTEXITCODE ----"
-          Write-Host $doctor
-          $doctor | ConvertFrom-Json | Out-Null
-          $sources = & "dist/AI Subscription Usage.exe" --verify-sources 2>&1 | Out-String
-          Write-Host "---- --verify-sources exit code: $LASTEXITCODE ----"
-          Write-Host $sources
-          $sources | ConvertFrom-Json | Out-Null
+          foreach ($flag in @('--doctor', '--verify-sources')) {
+            $proc = Start-Process -FilePath "dist/AI Subscription Usage.exe" -ArgumentList $flag -PassThru -RedirectStandardOutput "diagnostic-out.txt" -RedirectStandardError "diagnostic-err.txt"
+            if (-not $proc.WaitForExit(30000)) {
+              Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+              throw "$flag did not exit within 30 seconds"
+            }
+            if ($proc.ExitCode -ne 0) {
+              Get-Content "diagnostic-err.txt" -ErrorAction SilentlyContinue | Write-Host
+              throw "$flag failed with exit code $($proc.ExitCode)"
+            }
+            $result = Get-Content "diagnostic-out.txt" -Raw | ConvertFrom-Json
+            if ($null -eq $result -or $result.schema_version -ne 1) { throw "$flag returned no valid diagnostic data" }
+            Write-Host "$flag returned valid JSON"
+          }
       - name: Windows upgrade-retention test
         if: runner.os == 'Windows'
         shell: pwsh

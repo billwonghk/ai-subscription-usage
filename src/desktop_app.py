@@ -692,14 +692,14 @@ def launch_desktop(quit_running: bool = False) -> int:
 def command_line() -> bool:
     if "--refresh" in sys.argv:
         DesktopApp().refresh()
-        print(json.dumps({"ok": True, "report": str(REPORT_PATH), "version": APP_VERSION}, ensure_ascii=False))
+        print(json.dumps({"ok": True, "report": str(REPORT_PATH), "version": APP_VERSION}, ensure_ascii=True))
         return True
     if "--doctor" in sys.argv or "--verify-sources" in sys.argv:
         ensure_runtime_files()
         report = doctor_report()
         if "--verify-sources" in sys.argv:
             report = {"schema_version": 1, "configured_sources": load_configured_sources(), "discovered_sources": report["discovered_sources"]}
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        print(json.dumps(report, ensure_ascii=True, indent=2))
         return True
     if "--configure-source" in sys.argv:
         ensure_runtime_files()
@@ -710,7 +710,7 @@ def command_line() -> bool:
         parser.add_argument("--format", required=True, dest="format_name")
         parser.add_argument("--path", required=True)
         args = parser.parse_args()
-        print(json.dumps(configure_source(args.provider, args.surface, args.format_name, args.path), ensure_ascii=False, indent=2))
+        print(json.dumps(configure_source(args.provider, args.surface, args.format_name, args.path), ensure_ascii=True, indent=2))
         return True
     return False
 

@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | **Deutsch** | [Español](README.es.md)
 
-Eine lokale Menüleisten- bzw. System-Tray-App ohne Konto, die lokal gespeicherte Nutzungsprotokolle von ChatGPT, Claude Code, Claude Desktop, Gemini CLI und Grok ausliest und den API-Gegenwert der letzten 30 Tage mit dem tatsächlich gezahlten Abo-Betrag vergleicht. Alles läuft auf dem eigenen Rechner — kein KI-API-Schlüssel, keine Kontoanmeldung, kein Zugriff auf OAuth/Auth Token/Cookies und kein Cloud-Dienst im Spiel.
+Eine lokale Menüleisten- bzw. System-Tray-App ohne Konto, die unterstützte lokale Nutzungsprotokolle von ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok und MiniMax liest und den API-Gegenwert der letzten 30 Tage mit den tatsächlichen Abokosten vergleicht. Kimi, GLM und Alibaba Bailian werden erkannt, aber erst nach Prüfung ihres lokalen Formats gezählt. Alles läuft auf dem eigenen Rechner, ohne KI-API-Schlüssel, Kontoanmeldung, OAuth/Auth Token/Cookie-Zugriff oder Cloud-Dienst.
 
 ⭐ Wenn dir dieses Tool geholfen hat herauszufinden, ob sich dein KI-Abo wirklich lohnt, hilft ein Star anderen, es zu finden.
 
@@ -12,26 +12,15 @@ Eine lokale Menüleisten- bzw. System-Tray-App ohne Konto, die lokal gespeichert
 - 30-Tage-Dashboard: Gesamt-/Eingabe-/Ausgabe-Token, API-Gegenwert, effektive Abokosten und Wertfaktor, pro Anbieter
 - Tägliche Token- und Wertfaktor-Diagramme, Aufschlüsselung nach Modell
 - Verlauf der Abo-Pläne (monatlich/jährlich, anteilig nach Gültigkeitsdatum)
+- Überwachte Anbieter hinzufügen oder entfernen; entfernte Anbieter werden nicht gelesen, berechnet oder angezeigt
+- Abo-Eingabe und Berichtsanzeige in USD oder CNY mit datierten EZB-Referenzkursen
+- Unterstützung der lokalen MiniMax-Token-Tabelle; Kimi, GLM und Alibaba Bailian bleiben bis zur Formatprüfung reine Erkennung
 - Automatische Erkennung lokaler Nutzungsprotokolle, mit einer sicheren Whitelist-Methode für nicht standardmäßige Ordner
 - Preise für unterstützte Modelle werden automatisch etwa einmal pro Woche aus den öffentlichen API-Preisdaten von [OpenRouter](https://openrouter.ai/) aktualisiert — keine manuelle Pflege nötig
 - Sieben Sprachen: English, Français, Deutsch, Español, 简体中文, 日本語, 한국어
-- Start bei Anmeldung, einstellbares Aktualisierungsintervall, Ein-Klick-Zugriff auf den lokalen Datenordner
+- Start bei Anmeldung, tägliche automatische Aktualisierung um 03:00 Uhr, Nachholung 15 Minuten nach dem Start falls erforderlich, Ein-Klick-Zugriff auf den lokalen Datenordner
 - Nur optionale, anonymisierte Diagnosedaten — niemals Gesprächsinhalte, Dateipfade oder Zugangsdaten
 
-**Screenshots**
-
-| Bericht | Einstellungen |
-| --- | --- |
-| ![Bericht-Dashboard](assets/screenshots/report.png) | ![Einstellungsfenster](assets/screenshots/settings.png) |
-
-Details pro Anbieter (Token und Wert je Modell) sowie derselbe Bericht auf Chinesisch:
-
-![Claude-Anbieterdetails](assets/screenshots/report-claude-tab.png)
-![Bericht auf Chinesisch](assets/screenshots/report-zh.png)
-
-Die DeepSeek-Vergleichsmethode und die vollständige Modell-zu-Stufe-Zuordnung sind im integrierten Konfigurationsleitfaden der App dokumentiert:
-
-![DeepSeek-Vergleichsmethodik und Modellzuordnungstabelle](assets/screenshots/deepseek-methodology-en.png)
 
 **Installation**
 
@@ -61,6 +50,8 @@ Der macOS-Build landet in `dist/AI Subscription Usage.app`, der Windows-Build in
 | Gemini CLI | ✅ Funktioniert, verifiziert | 🟡 Sollte funktionieren — nicht auf echtem Windows getestet |
 | Gemini Desktop (Antigravity/Spark) | ❌ Bestätigt nicht möglich | ❌ Vermutlich ebenfalls nicht möglich (gleiches Produkt) — nicht gezielt bestätigt |
 | Grok | 🟡 Code sollte korrekt sein, aber es gibt auf diesem Rechner keine echten Grok-Daten zur Überprüfung | 🟡 Ebenfalls nicht verifiziert, und Windows-Tests haben ebenfalls nicht stattgefunden |
+| MiniMax | ✅ Lokale Token-Abrechnungstabelle unter macOS verifiziert | 🟡 Parser implementiert, nicht auf echtem Windows getestet |
+| Kimi / GLM / Alibaba Bailian | 🟡 Installation und lokale Dateien werden erkannt; keine Auswertung vor Formatprüfung | 🟡 Ebenfalls nur Erkennung, nicht auf echtem Windows getestet |
 
 Gemini Desktop (Antigravity/Spark) schreibt lokale Sitzungsdateien verschlüsselt (`~/.gemini/antigravity/conversations/*.pb`), ohne lesbare Struktur und ohne dokumentierte, sichere lokale API, sodass die Token-Nutzung dafür nicht ausgelesen werden kann — sie wird als erkannt, aber nicht bepreist angezeigt.
 
@@ -84,6 +75,8 @@ Die öffentliche GitHub-Version enthält keine Abo-Pläne, Erkennungsergebnisse,
 | Antigravity CLI | `~/.gemini/antigravity-cli/` | Automatisch erkannt; nicht bepreist, solange das Format nicht verifiziert ist |
 | Grok Build | `~/.grok/logs/unified.jsonl` | Bevorzugt exakte Eingabe-, Ausgabe-, Reasoning- und Cache-Token |
 | Grok Build Fallback | `~/.grok/sessions/**/signals.json` | Wird nur verwendet, wenn keine `unified.jsonl` vorhanden ist; als Schätzung gekennzeichnet |
+| MiniMax | `~/.minimax/sqlite.db` | Exakte Eingabe-, Ausgabe-, Reasoning-, Cache-Lese- und Cache-Schreib-Token aus der lokalen Abrechnungstabelle |
+| Kimi / GLM / Alibaba Bailian | Jeweils registrierte Standardordner | Nur Erkennung; keine Nutzungszählung vor Formatprüfung |
 
 Modellnamen müssen exakt mit `config/pricing.json` übereinstimmen. Bei unbekannten Modellen werden die Token weiterhin gezählt, es wird jedoch kein API-Gegenwert dafür berechnet, und es wird auch nicht der Preis eines anderen Modells angewendet. Die Preisdatenbank kann je Gültigkeitsdatum unterschiedliche Preise speichern; bei historischen Datensätzen wird jeweils der an diesem Tag gültige Preis verwendet.
 
@@ -97,7 +90,7 @@ Das Ergebnis wird nach `outputs/ai-usage-report.html` geschrieben. Die Schaltfl�
 
 ## macOS-Menüleiste und Windows-Tray
 
-Die Desktop-App bietet: Bericht öffnen, jetzt aktualisieren, Modellpreise aktualisieren, nach App-Updates suchen, Sprache wechseln, Konfiguration & Bedienungsanleitung, einen Schalter für anonyme Diagnosedaten sowie Beenden. Beim ersten Start öffnet sich automatisch die Konfiguration & Bedienungsanleitung, die den Erkennungsstatus der lokalen Datenquellen, Diagnosebefehle und einen sicheren Konfigurationsprompt zeigt, den Sie an Ihren eigenen lokalen KI-Assistenten weitergeben können. Standardmäßig werden lokale Daten und die App-Version alle 24 Stunden geprüft.
+Ein Linksklick auf das Menüleistensymbol öffnet oder verwendet den vorhandenen Bericht sofort wieder, ohne ihn zu aktualisieren. Bei der Erstinstallation wird nur dann ein Anfangsbericht erzeugt, wenn noch keiner vorhanden ist. Danach werden die Daten einmal täglich um 03:00 Uhr Ortszeit aktualisiert. Wurde diese Aktualisierung verpasst, erfolgt sie 15 Minuten nach dem nächsten Start, sofern an diesem Tag noch keine Aktualisierung erfolgreich war. „Jetzt aktualisieren“ bleibt verfügbar und zählt bei Erfolg als Aktualisierung des Tages. Die Versionsprüfung behält ihr bisheriges 24-Stunden-Intervall.
 
 ## Automatische Erkennung & KI-gestützte Konfiguration
 
@@ -126,7 +119,7 @@ Die Desktop-Oberfläche enthält Ressourcen für Englisch, Französisch, Deutsch
 
 `config/pricing.json` speichert Preisversion, offizielle Quellen, Modellpreise und Gültigkeitsdaten. Der Client lädt Preisaktualisierungen anhand eines Manifests herunter, prüft die SHA-256-Prüfsumme und die Feldstruktur und ersetzt dann die lokale Preisdatenbank atomar. Dieses Tool soll einen Trend zeigen und keine hundertprozentig exakte Preisreferenz sein; als Aktualisierungsquelle dienen daher die öffentlichen API-Preisdaten von [OpenRouter](https://openrouter.ai/) — einem bekannten LLM-Proxy, dessen API-Preise sich in der Regel an den offiziellen Tarifen orientieren.
 
-`config/model_id_map.json` ordnet die lokalen Modellnamen dieses Projekts der exakten Modell-ID bei OpenRouter zu. `scripts/fetch_pricing.py` nutzt diese Zuordnung, um aktuelle Preise abzurufen und `config/pricing.json` sowie `config/pricing-manifest.json` neu zu schreiben; `.github/workflows/update-pricing.yml` führt dies automatisch etwa einmal pro Woche aus und committet nur, wenn sich ein Preis tatsächlich geändert hat. Eine echte Preisänderung wird als neuer, datierter Zeitraum erfasst, sodass vergangene Berichtsdaten weiterhin den zu dieser Zeit tatsächlich gültigen Preis verwenden. Modelle, die bereits einen manuell gepflegten, datierten Zeitplan haben, bleiben von dieser Automatisierung unberührt. Taucht in den Nutzungsprotokollen ein völlig neuer Modellname auf, der noch nicht in der Zuordnung enthalten ist, wird er einfach als nicht bepreist angezeigt, bis eine Zeile in `config/model_id_map.json` ergänzt wird — die Desktop-App versucht zudem, in dem Moment, in dem sie ein neues Modell erkennt, sofort eine Preisaktualisierung.
+`config/model_id_map.json` ordnet lokale Modellnamen den exakten OpenRouter-IDs zu. `scripts/fetch_pricing.py` ruft ungefähr wöchentlich aktuelle Preise ab und aktualisiert die Preisdateien sowie das verifizierte Manifest nur bei Änderungen. OpenRouter-Modelle bleiben auch nach Erstellung einer datierten Historie automatisch aktualisierbar. Eine Preisänderung beendet den aktuellen Zeitraum und eröffnet ab demselben Tag einen neuen; vergangene Nutzungstage behalten ihren damaligen Preis. Einträge aus einer anderen ausdrücklich genannten Quelle werden nicht überschrieben. Neue Modelle zählen weiterhin Token, bleiben jedoch ohne Preis, bis Zuordnung und öffentlicher Tarif verifiziert sind.
 
 Der Detailtab jedes Anbieters zeigt außerdem die Cache-Trefferquote für den Zeitraum sowie geschätzte Kosten, falls dieselbe Nutzung auf [DeepSeek](https://www.deepseek.com/) gelaufen wäre. Jedes Modell wird nach Leistungsklasse einer DeepSeek-V4-Stufe (Flash oder Pro) zugeordnet (siehe `config/deepseek_tier_map.json`), unter Verwendung der eigenen öffentlichen Preise von DeepSeek (ebenfalls über OpenRouter aktuell gehalten) und der tatsächlichen Cache-Treffer-/Fehlerquote dieses Zeitraums — nicht einer geschätzten Quote. Flaggschiff-Modelle ohne echtes DeepSeek-Gegenstück werden trotzdem mit Pro verglichen, bewusst zugunsten von DeepSeek, damit der Vergleich niemals übertrieben ausfällt.
 

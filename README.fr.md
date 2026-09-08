@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | **Français** | [Deutsch](README.de.md) | [Español](README.es.md)
 
-Une application de barre de menus / de la zone de notification, locale et sans compte, qui lit les journaux d'utilisation stockés sur votre machine pour ChatGPT, Claude Code, Claude Desktop, Gemini CLI et Grok, puis compare la valeur équivalente en API sur 30 jours à ce que vous payez réellement pour chaque abonnement. Tout s'exécute sur votre propre machine — aucune clé API IA, aucune connexion à un compte, aucun accès OAuth/jeton d'authentification/cookie, et aucun service cloud impliqué.
+Application locale de barre de menus ou de zone de notification, sans compte, qui lit les journaux pris en charge de ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok et MiniMax, puis compare la valeur API des 30 derniers jours au prix réellement payé. Kimi, GLM et Alibaba Bailian sont détectés mais ne sont pas comptés avant validation de leur format local. Tout s'exécute sur la machine : aucune clé API IA, connexion de compte, donnée OAuth/Auth Token/Cookie ni service cloud.
 
 ⭐ Si cet outil vous a aidé à savoir si votre abonnement IA en vaut vraiment la peine, un Star aide d'autres personnes à le trouver.
 
@@ -12,26 +12,15 @@ Une application de barre de menus / de la zone de notification, locale et sans c
 - Tableau de bord sur 30 jours : jetons totaux/entrée/sortie, valeur équivalente en API, coût d'abonnement effectif et multiple de valeur, par fournisseur
 - Graphiques quotidiens des jetons et du multiple de valeur, détail par modèle
 - Historique des plans d'abonnement (mensuel/annuel, calculé au prorata selon la date d'effet)
+- Ajout ou retrait des fournisseurs surveillés ; un fournisseur retiré n'est ni lu, ni calculé, ni affiché
+- Saisie et affichage des abonnements en USD ou CNY, avec conversion selon les taux de référence quotidiens de la BCE
+- Lecture du compteur local MiniMax ; Kimi, GLM et Alibaba Bailian restent en détection seule tant que leur format n'est pas vérifié
 - Détection automatique des journaux d'utilisation locaux, avec une méthode sécurisée et sur liste blanche pour pointer vers un dossier non par défaut
 - Les tarifs des modèles pris en charge sont actualisés automatiquement environ une fois par semaine à partir des données tarifaires publiques de l'API d'[OpenRouter](https://openrouter.ai/) — aucune modification manuelle nécessaire
 - Sept langues : English, Français, Deutsch, Español, 简体中文, 日本語, 한국어
-- Lancement au démarrage, intervalle d'actualisation réglable, accès en un clic à votre dossier de données locales
+- Lancement au démarrage, actualisation automatique quotidienne à 03:00, rattrapage 15 minutes après le lancement si nécessaire, accès en un clic au dossier de données locales
 - Diagnostics anonymisés uniquement sur consentement explicite — jamais de contenu de conversation, de chemins de fichiers ni d'identifiants
 
-**Captures d'écran**
-
-| Rapport | Paramètres |
-| --- | --- |
-| ![Tableau de bord du rapport](assets/screenshots/report.png) | ![Panneau des paramètres](assets/screenshots/settings.png) |
-
-Détail par fournisseur (jetons et valeur par modèle), et le même rapport en chinois :
-
-![Détail du fournisseur Claude](assets/screenshots/report-claude-tab.png)
-![Rapport en chinois](assets/screenshots/report-zh.png)
-
-La méthode de comparaison DeepSeek et la correspondance complète modèle-niveau sont documentées dans le guide de configuration intégré à l'application :
-
-![Méthodologie de comparaison DeepSeek et tableau de correspondance des modèles](assets/screenshots/deepseek-methodology-en.png)
 
 **Obtenir l'application**
 
@@ -61,6 +50,8 @@ La version macOS est générée dans `dist/AI Subscription Usage.app` ; la versi
 | Gemini CLI | ✅ Fonctionne, vérifié | 🟡 Devrait fonctionner — non testé sur un vrai Windows |
 | Gemini Desktop (Antigravity/Spark) | ❌ Confirmé impossible | ❌ Probablement impossible aussi (même produit) — non confirmé spécifiquement |
 | Grok | 🟡 Le code devrait être correct, mais il n'y a pas de données Grok réelles sur cette machine pour vérifier | 🟡 Également non vérifié, et les tests Windows n'ont pas non plus eu lieu |
+| MiniMax | ✅ Table locale de comptage vérifiée sur macOS | 🟡 Analyseur implémenté, non testé sur un vrai Windows |
+| Kimi / GLM / Alibaba Bailian | 🟡 Installation et fichiers locaux détectés ; aucune analyse avant validation du format | 🟡 Même état de détection seule, non testé sur un vrai Windows |
 
 Gemini Desktop (Antigravity/Spark) écrit ses fichiers de session locaux sous forme chiffrée (`~/.gemini/antigravity/conversations/*.pb`), sans structure lisible ni API locale sûre et documentée, si bien que l'utilisation de jetons ne peut pas être lue pour ce produit — il apparaît comme détecté mais non tarifé.
 
@@ -84,6 +75,8 @@ La version publique publiée sur GitHub ne contient ni plans d'abonnement, ni r�
 | Antigravity CLI | `~/.gemini/antigravity-cli/` | Détection automatique ; non tarifé tant que le format n'est pas vérifié |
 | Grok Build | `~/.grok/logs/unified.jsonl` | Privilégie la lecture exacte des jetons d'entrée, de sortie, de raisonnement et de cache |
 | Source de repli Grok Build | `~/.grok/sessions/**/signals.json` | Utilisée uniquement en l'absence de `unified.jsonl` ; signalée comme une estimation |
+| MiniMax | `~/.minimax/sqlite.db` | Jetons exacts d'entrée, sortie, raisonnement, lecture et écriture du cache issus du compteur local |
+| Kimi / GLM / Alibaba Bailian | Dossiers par défaut enregistrés | Détection seule ; aucune utilisation comptée avant validation du format |
 
 Les noms de modèles doivent correspondre exactement à ceux de `config/pricing.json`. Les modèles inconnus continuent d'avoir leurs jetons comptabilisés, mais aucune valeur équivalente en API n'est calculée pour eux, et le tarif d'aucun autre modèle ne leur est appliqué. La base de données tarifaires peut stocker des tarifs différents selon la date d'effet ; les enregistrements historiques utilisent le tarif qui était en vigueur ce jour-là.
 
@@ -97,7 +90,7 @@ Le résultat est écrit dans `outputs/ai-usage-report.html`. Le bouton « Actual
 
 ## Barre de menus macOS et zone de notification Windows
 
-L'application de bureau propose : ouvrir le rapport, actualiser maintenant, mettre à jour les tarifs des modèles, vérifier les mises à jour de l'application, changer de langue, accéder à la configuration et au guide d'utilisation, activer/désactiver les diagnostics anonymes, et quitter. Au premier lancement, elle ouvre automatiquement la configuration et le guide d'utilisation, qui affiche l'état de détection des sources de données locales, les commandes de diagnostic et une invite de configuration sûre que vous pouvez copier vers votre propre assistant IA local. Par défaut, elle actualise les données locales et vérifie la version de l'application toutes les 24 heures.
+Un clic gauche sur l'icône de la barre de menus ouvre ou réutilise immédiatement le rapport existant sans l'actualiser. Lors de la première installation, un rapport initial est créé uniquement s'il n'en existe aucun. Ensuite, les données sont actualisées une fois par jour à 03:00, heure locale. Si cette actualisation a été manquée, elle est exécutée 15 minutes après le prochain lancement, sauf si une actualisation a déjà réussi ce jour-là. « Actualiser maintenant » reste disponible et compte comme l'actualisation du jour en cas de succès. La vérification de version conserve son intervalle de 24 heures.
 
 ## Détection automatique et configuration assistée par IA
 
@@ -126,7 +119,7 @@ L'interface de bureau intègre des ressources en anglais, français, allemand, e
 
 `config/pricing.json` stocke la version des tarifs, les sources officielles, les prix des modèles et les dates d'effet. Le client télécharge les mises à jour tarifaires depuis un manifeste, vérifie la somme de contrôle SHA-256 et la structure des champs, puis remplace de façon atomique la base de données tarifaires locale. Cet outil est conçu pour montrer une tendance, pas pour être une référence tarifaire parfaitement précise ; la source de mise à jour est donc constituée par les données tarifaires publiques de l'API d'[OpenRouter](https://openrouter.ai/) — un proxy LLM bien connu dont les tarifs d'API suivent généralement les tarifs officiels.
 
-`config/model_id_map.json` fait correspondre les noms de modèles locaux de ce projet à leur identifiant exact chez OpenRouter. `scripts/fetch_pricing.py` utilise cette correspondance pour récupérer les tarifs actuels et réécrire `config/pricing.json` et `config/pricing-manifest.json` ; `.github/workflows/update-pricing.yml` l'exécute automatiquement environ une fois par semaine et ne valide (commit) que si un tarif a réellement changé. Un changement de tarif réel est enregistré comme une nouvelle période datée, afin que les dates de rapport passées continuent d'utiliser le tarif réellement en vigueur à l'époque. Les modèles disposant déjà d'un calendrier daté renseigné manuellement ne sont pas modifiés par cette automatisation. Lorsque les journaux d'utilisation révèlent un tout nouveau nom de modèle absent de la correspondance, il est simplement affiché comme non tarifé jusqu'à ce qu'une ligne soit ajoutée à `config/model_id_map.json` — l'application de bureau tente également une actualisation immédiate des tarifs dès qu'elle détecte un nouveau modèle.
+`config/model_id_map.json` relie les noms locaux aux identifiants exacts d'OpenRouter. Environ une fois par semaine, `scripts/fetch_pricing.py` récupère les prix courants et ne met à jour les fichiers de prix et le manifeste vérifié qu'en cas de changement. Les modèles provenant d'OpenRouter restent actualisables après la création d'un historique daté : un changement clôt la période courante et en ouvre une nouvelle le jour même, sans modifier les tarifs appliqués aux jours passés. Les entrées gérées depuis une autre source déclarée ne sont pas écrasées. Un nouveau modèle conserve ses jetons mais reste sans prix jusqu'à validation de sa correspondance et de son tarif public.
 
 L'onglet de détail de chaque fournisseur affiche aussi son taux de succès du cache pour la période, ainsi qu'un coût estimé si la même utilisation avait tourné sur [DeepSeek](https://www.deepseek.com/). Chaque modèle est associé à un niveau DeepSeek V4 Flash ou Pro selon sa capacité (voir `config/deepseek_tier_map.json`), en utilisant les tarifs publics propres à DeepSeek (également tenus à jour via OpenRouter) et la répartition réelle succès/échec du cache pour cette période — pas un ratio estimé. Les modèles haut de gamme sans véritable équivalent chez DeepSeek sont tout de même comparés au niveau Pro, délibérément en faveur de DeepSeek, afin que la comparaison ne soit jamais exagérée.
 

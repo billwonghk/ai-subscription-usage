@@ -1,5 +1,5 @@
 {
-  "price_version": "2026-08-30.auto-deepseek.2",
+  "price_version": "2026-09-03.openrouter",
   "pricing_url": "https://raw.githubusercontent.com/billwonghk/ai-subscription-usage/main/config/pricing.json",
-  "sha256": "5d012013c9036c401f51d92b56afff7a90579cf2073c01c97e1ee117f0343e41"
+  "sha256": "25d957e489944b67717a8a9198e590b1737706860c06ef3cb5f29d827d9d2cea"
 }

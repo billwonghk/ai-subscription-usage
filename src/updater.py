@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import math
+import datetime as dt
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -28,15 +31,30 @@ def validate_pricing(data: dict[str, Any]) -> None:
     for model, rate in models.items():
         if not isinstance(model, str) or not isinstance(rate, dict):
             raise ValueError(f"invalid price entry: {model}")
-        entries = rate.get("periods") if isinstance(rate.get("periods"), list) else [rate]
+        if "periods" in rate and not isinstance(rate["periods"], list):
+            raise ValueError(f"invalid price periods: {model}")
+        entries = rate.get("periods", [rate])
         if not entries:
             raise ValueError(f"empty price periods: {model}")
+        intervals = []
         for entry in entries:
             if not isinstance(entry, dict) or not REQUIRED_RATE_FIELDS.issubset(entry):
                 raise ValueError(f"invalid price entry: {model}")
-            for field in REQUIRED_RATE_FIELDS:
-                if not isinstance(entry[field], (int, float)) or entry[field] < 0:
+            for field in REQUIRED_RATE_FIELDS | ({"cache_write_input_per_million"} & entry.keys()):
+                if isinstance(entry[field], bool) or not isinstance(entry[field], (int, float)) or not math.isfinite(entry[field]) or entry[field] < 0:
                     raise ValueError(f"invalid {field}: {model}")
+            if "periods" in rate:
+                try:
+                    start = dt.date.fromisoformat(entry["start_date"])
+                    end = dt.date.fromisoformat(entry["end_date"]) if entry.get("end_date") else dt.date.max
+                except (KeyError, TypeError, ValueError) as error:
+                    raise ValueError(f"invalid price dates: {model}") from error
+                if end < start:
+                    raise ValueError(f"reversed price dates: {model}")
+                intervals.append((start, end))
+        intervals.sort()
+        if any(right[0] <= left[1] for left, right in zip(intervals, intervals[1:])):
+            raise ValueError(f"overlapping price periods: {model}")
 
 
 def update_pricing(manifest_url: str, destination: Path) -> str:
@@ -66,6 +84,14 @@ def latest_release(releases_url: str, current_version: str) -> dict[str, str] | 
     release = download_json(releases_url)
     tag = str(release.get("tag_name", "")).lstrip("v")
     page = release.get("html_url")
-    if tag and tag != current_version and isinstance(page, str):
+    def stable_version(value: str) -> tuple[int, int, int] | None:
+        match = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)", value)
+        return tuple(map(int, match.groups())) if match else None
+
+    remote = stable_version(tag)
+    current = stable_version(current_version)
+    if (remote is not None and current is not None and remote > current
+            and not release.get("draft") and not release.get("prerelease")
+            and isinstance(page, str)):
         return {"version": tag, "url": page}
     return None

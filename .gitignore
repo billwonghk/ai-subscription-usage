@@ -11,3 +11,10 @@ tests/__pycache__/
 .DS_Store
 deploy/
 scripts/cloud_deploy.sh
+private/
+crew-audit-task.json
+assets/screenshots/
+docs/audit-2026-09-07.md
+docs/bilingual-and-audit-fixes-2026-09-07.md
+docs/application-lifecycle-2026-09-07.md
+scripts/diagnose_voice_usage.py

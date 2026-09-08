@@ -46,6 +46,14 @@ jobs:
           else
             "dist/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage" --self-test
           fi
+      - name: Check packaged privacy
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            python scripts/privacy_check.py --package dist
+          else
+            python scripts/privacy_check.py --package "dist/AI Subscription Usage.app"
+          fi
       - name: Windows diagnostics
         if: runner.os == 'Windows'
         shell: pwsh
@@ -129,4 +137,6 @@ jobs:
       - run: sha256sum release/* > release/SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
+          draft: true
+          body_path: docs/release-v0.5.0.md
           files: release/*

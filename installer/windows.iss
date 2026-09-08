@@ -18,6 +18,9 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
+CloseApplications=yes
+CloseApplicationsFilter=AI Subscription Usage.exe
+RestartApplications=no
 
 [Files]
 Source: "..\dist\AI Subscription Usage.exe"; DestDir: "{app}"; Flags: ignoreversion

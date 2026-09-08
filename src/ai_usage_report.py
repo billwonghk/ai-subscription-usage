@@ -207,7 +207,7 @@ def parse_codex(root: Path, since: dt.date) -> tuple[list[Usage], int]:
     return sorted(usages.values(), key=lambda item: (item.date, item.model)), files_read
 
 
-def parse_claude_code(root: Path, since: dt.date) -> tuple[list[Usage], int]:
+def parse_claude_code(root: Path, since: dt.date, *, provider: str = "Claude Code", excluded_roots: tuple[Path, ...] = ()) -> tuple[list[Usage], int]:
     """Parse Claude Code's per-response usage entries from local JSONL files."""
     usages: dict[tuple[str, str], Usage] = {}
     responses: dict[str, tuple[str, str, dict[str, Any], str]] = {}
@@ -215,6 +215,8 @@ def parse_claude_code(root: Path, since: dt.date) -> tuple[list[Usage], int]:
     if not root.exists():
         return [], files_read
     for path in sorted(root.rglob("*.jsonl")):
+        if any(path.resolve().is_relative_to(excluded.resolve()) for excluded in excluded_roots):
+            continue
         files_read += 1
         try:
             stream = path.open("r", encoding="utf-8")
@@ -251,13 +253,65 @@ def parse_claude_code(root: Path, since: dt.date) -> tuple[list[Usage], int]:
                 responses[response_id] = (date, model, usage, deepseek_rate_band(explicit_record_moment(record)))
     for date, model, usage, rate_band in responses.values():
         key = (date, model, rate_band)
-        item = usages.setdefault(key, Usage("Claude Code", model, date, deepseek_rate_band=rate_band))
+        item = usages.setdefault(key, Usage(provider, model, date, deepseek_rate_band=rate_band))
         item.input_tokens += as_int(usage.get("input_tokens"))
         item.output_tokens += as_int(usage.get("output_tokens"))
         # Claude keeps creation and read cache counters separately.
         item.cached_input_tokens += as_int(usage.get("cache_read_input_tokens"))
         item.cache_write_input_tokens += as_int(usage.get("cache_creation_input_tokens"))
     return sorted(usages.values(), key=lambda item: (item.date, item.model)), files_read
+
+
+def parse_kimi_wire(root: Path, since: dt.date) -> tuple[list[Usage], int]:
+    """Read persisted StatusUpdate records, not JSON-RPC transport messages.
+
+    Official sources: MoonshotAI/kimi-cli wire/file.py, wire/types.py and
+    packages/kosong/src/kosong/chat_provider/__init__.py. StatusUpdate has no
+    model ID: preserve unknown model rather than relabel historical usage.
+    """
+    responses = {}
+    files_read = 0
+    for path in sorted(root.rglob("wire.jsonl")) if root.exists() else ():
+        try:
+            stream = path.open(encoding="utf-8")
+        except OSError:
+            continue
+        files_read += 1
+        with stream:
+            for line_number, line in enumerate(stream):
+                try:
+                    record = json.loads(line)
+                    if not isinstance(record, dict):
+                        continue
+                    message = record.get("message")
+                    if not isinstance(message, dict) or message.get("type") != "StatusUpdate":
+                        continue
+                    payload = message.get("payload")
+                    if not isinstance(payload, dict):
+                        continue
+                    counters = payload.get("token_usage")
+                    if not isinstance(counters, dict):
+                        continue
+                    timestamp = record.get("timestamp")
+                    if isinstance(timestamp, bool) or not isinstance(timestamp, (int, float)):
+                        continue
+                    moment = dt.datetime.fromtimestamp(timestamp, dt.timezone.utc)
+                    day = moment.astimezone().date()
+                    if day < since:
+                        continue
+                    values = [counters.get(k, 0) for k in
+                              ("input_other", "output", "input_cache_read", "input_cache_creation")]
+                    if any(type(v) is not int or v < 0 for v in values):
+                        continue
+                    identifier = payload.get("message_id")
+                    key = (path.parent.name, identifier) if isinstance(identifier, str) and identifier else (str(path), line_number)
+                    responses[key] = Usage("Kimi", "未记录模型", day.isoformat(),
+                                           input_tokens=values[0], output_tokens=values[1],
+                                           cached_input_tokens=values[2], cache_write_input_tokens=values[3],
+                                           deepseek_rate_band=deepseek_rate_band(moment))
+                except (ValueError, OverflowError, OSError):
+                    continue
+    return list(responses.values()), files_read
 
 
 def parse_minimax(database: Path, since: dt.date) -> tuple[list[Usage], int]:
@@ -834,8 +888,8 @@ function activePlan(provider,date){{return plans.filter(p=>p.provider===provider
 function renderSummary(){{let api=DATA.providers.reduce((n,p)=>n+(aggregateValue(p.totals,'cost')||0),0),sub=DATA.providers.reduce((n,p)=>n+p.daily.reduce((s,d)=>{{let cost=dailyCost(p.plan,d.date);return s+(cost||0)}},0),0),ds=DATA.providers.reduce((n,p)=>n+(aggregateValue(p,'deepseek_cost')||0),0);$('summary-api').textContent=cash(api);$('summary-sub').textContent=cash(sub);$('summary-ratio').textContent=multipleText(sub?api/sub:null);$('summary-deepseek').textContent=cash(ds)}}
 function renderPlans(){{$('provider').innerHTML=DATA.providers.map(p=>`<option value="${{esc(p.plan)}}">${{esc(p.label)}}</option>`).join('');$('plan-grid').style.gridTemplateColumns=`repeat(${{Math.max(1,DATA.providers.length)}},minmax(0,1fr))`;let windowStart=DATA.days[0];$('plan-grid').innerHTML=DATA.providers.map(p=>{{let current=activePlan(p.plan,DATA.today);if(!current)return `<div class="plan-card"><h3>${{esc(p.label)}}</h3><div class="price">未设置</div><div class="muted">不计算订阅成本与倍数</div></div>`;let startingPlan=activePlan(p.plan,windowStart),history=plans.filter(x=>x.provider===p.plan&&(x.start_date>windowStart||(startingPlan&&x.start_date===startingPlan.start_date))).sort((a,b)=>a.start_date.localeCompare(b.start_date)),shown=h=>convert(h.amount,h.currency||'USD',displayCurrency,DATA.today),rows=history.length>1?history.map(h=>`<div class="muted">${{h.start_date}} 生效 · ${{cash(shown(h))}} / ${{h.cycle==='year'?'年':'月'}} <span>(${{h.currency||'USD'}})</span></div>`).join(''):`<div class="muted">${{current.start_date}} 生效 · 原币种 ${{current.currency||'USD'}}</div>`;return `<div class="plan-card"><h3>${{esc(p.label)}}</h3><div class="price">${{cash(shown(current))}} / ${{current.cycle==='year'?'年':'月'}}</div>${{rows}}<div class="muted">历史计划 ${{history.length}} 条</div></div>`}}).join('')}}
 function chartProviders(){{return DATA.providers.filter(p=>p.has_data)}}function focusProvider(providerId){{document.querySelectorAll('path.series').forEach(path=>{{let active=path.dataset.provider===providerId;path.style.opacity=active?'1':'.16';path.setAttribute('stroke-width',active?'5':'2')}})}}function clearProviderFocus(){{document.querySelectorAll('path.series').forEach(path=>{{path.style.opacity='1';path.setAttribute('stroke-width','3')}})}}function legend(id){{$(id).innerHTML=chartProviders().map(p=>`<span class="legend-item" tabindex="0" data-provider="${{esc(p.id)}}" style="cursor:pointer;padding:4px 7px;border-radius:7px"><i class="dot" style="background:${{p.color}}"></i>${{esc(p.label)}}</span>`).join('');$(id).querySelectorAll('.legend-item').forEach(item=>{{item.onmouseenter=item.onfocus=()=>focusProvider(item.dataset.provider);item.onmouseleave=item.onblur=clearProviderFocus}})}}
-function series(type){{return chartProviders().map(p=>{{let hasPriced=p.totals.tokens>p.totals.unpriced;return {{provider:p,values:p.daily.map(d=>{{if(type==='tokens')return d.tokens;let cost=dailyCost(p.plan,d.date),api=apiValue(d,d.date);return hasPriced&&cost&&api!==null?api/cost:null}})}}}})}}
-function chart(id,type){{let svg=$(id),w=1100,h=300,l=64,r=20,t=18,b=38,iw=w-l-r,ih=h-t-b,all=series(type),finite=all.flatMap(s=>s.values.filter(v=>v!==null)),max=Math.max(1,...finite),x=i=>l+(DATA.days.length===1?0:i*iw/(DATA.days.length-1)),y=v=>t+ih-v/max*ih;let grid=[0,.25,.5,.75,1].map(k=>`<line class="gridline" x1="${{l}}" y1="${{y(max*k)}}" x2="${{w-r}}" y2="${{y(max*k)}}"/><text class="tick" x="4" y="${{y(max*k)+4}}">${{type==='tokens'?Math.round(max*k).toLocaleString():(max*k).toFixed(1)+'×'}}</text>`).join('');let paths=all.map(s=>{{let parts=[],open=false,points=[];s.values.forEach((v,i)=>{{if(v===null){{open=false;return}}parts.push(`${{open?'L':'M'}}${{x(i).toFixed(1)}} ${{y(v).toFixed(1)}}`);points.push(`<circle cx="${{x(i)}}" cy="${{y(v)}}" r="${{finite.length===1?5:2.6}}" fill="${{s.provider.color}}"/>`);open=true}});return parts.length?`<g data-provider="${{esc(s.provider.id)}}"><path class="series" data-provider="${{esc(s.provider.id)}}" d="${{parts.join(' ')}}" fill="none" stroke="${{s.provider.color}}" stroke-width="3"/>${{points.join('')}}</g>`:''}}).join('');let labels=DATA.days.map((d,i)=>i===0||(DATA.days.length-1-i)%3===0?`<text class="tick" x="${{x(i)}}" y="292" text-anchor="middle">${{d.slice(5)}}${{i===DATA.days.length-1?'（今日）':''}}</text>`:'').join('');svg.innerHTML=grid+paths+`<line class="hoverline" visibility="hidden" x1="0" y1="${{t}}" x2="0" y2="${{t+ih}}"/><rect class="hit-area" x="${{l}}" y="${{t}}" width="${{iw}}" height="${{ih}}" fill="transparent" style="pointer-events:all"/>`+labels;let hit=svg.querySelector('.hit-area');hit.onmousemove=e=>{{let bounds=hit.getBoundingClientRect(),fraction=(e.clientX-bounds.left)/bounds.width,i=Math.max(0,Math.min(DATA.days.length-1,Math.round(fraction*(DATA.days.length-1)))),date=DATA.days[i],line=svg.querySelector('.hoverline');line.setAttribute('x1',x(i));line.setAttribute('x2',x(i));line.setAttribute('visibility','visible');let rows=chartProviders().map(p=>{{let d=p.daily[i];if(type==='tokens')return `<span style="color:${{p.color}}">${{esc(p.label)}}</span>：${{num(d.tokens)}} Token`;let sub=dailyCost(p.plan,date),api=apiValue(d,date),priced=p.totals.tokens>p.totals.unpriced,ratio=priced&&sub&&api!==null?api/sub:null,status=!sub?'无生效计划':!priced?'模型未计价':ratio===null?'汇率不可用':ratio.toFixed(2)+'×';return `<span style="color:${{p.color}}">${{esc(p.label)}}</span>：${{status}}<br>API ${{cash(api)}} · 日成本 ${{cash(sub)}}`}}).join('<br>');$('tip').innerHTML=`${{date}}<br>${{rows}}`;$('tip').style.display='block';$('tip').style.left=Math.min(e.clientX+14,window.innerWidth-260)+'px';$('tip').style.top=(e.clientY+14)+'px'}};hit.onmouseleave=()=>{{svg.querySelector('.hoverline').setAttribute('visibility','hidden');$('tip').style.display='none'}}}}
+function series(type){{return chartProviders().map(p=>{{return {{provider:p,values:p.daily.map(d=>{{if(type==='tokens')return d.tokens;let cost=dailyCost(p.plan,d.date),api=apiValue(d,d.date),priced=d.tokens>d.unpriced;return priced&&cost&&api!==null?api/cost:null}})}}}})}}
+function chart(id,type){{let svg=$(id),w=1100,h=300,l=64,r=20,t=18,b=38,iw=w-l-r,ih=h-t-b,all=series(type),finite=all.flatMap(s=>s.values.filter(v=>v!==null)),max=Math.max(1,...finite),x=i=>l+(DATA.days.length===1?0:i*iw/(DATA.days.length-1)),y=v=>t+ih-v/max*ih;let grid=[0,.25,.5,.75,1].map(k=>`<line class="gridline" x1="${{l}}" y1="${{y(max*k)}}" x2="${{w-r}}" y2="${{y(max*k)}}"/><text class="tick" x="4" y="${{y(max*k)+4}}">${{type==='tokens'?Math.round(max*k).toLocaleString():(max*k).toFixed(1)+'×'}}</text>`).join('');let paths=all.map(s=>{{let parts=[],open=false,points=[];s.values.forEach((v,i)=>{{if(v===null){{open=false;return}}parts.push(`${{open?'L':'M'}}${{x(i).toFixed(1)}} ${{y(v).toFixed(1)}}`);points.push(`<circle cx="${{x(i)}}" cy="${{y(v)}}" r="${{finite.length===1?5:2.6}}" fill="${{s.provider.color}}"/>`);open=true}});return parts.length?`<g data-provider="${{esc(s.provider.id)}}"><path class="series" data-provider="${{esc(s.provider.id)}}" d="${{parts.join(' ')}}" fill="none" stroke="${{s.provider.color}}" stroke-width="3"/>${{points.join('')}}</g>`:''}}).join('');let labels=DATA.days.map((d,i)=>i===0||(DATA.days.length-1-i)%3===0?`<text class="tick" x="${{x(i)}}" y="292" text-anchor="middle">${{d.slice(5)}}${{i===DATA.days.length-1?'（今日）':''}}</text>`:'').join('');svg.innerHTML=grid+paths+`<line class="hoverline" visibility="hidden" x1="0" y1="${{t}}" x2="0" y2="${{t+ih}}"/><rect class="hit-area" x="${{l}}" y="${{t}}" width="${{iw}}" height="${{ih}}" fill="transparent" style="pointer-events:all"/>`+labels;let hit=svg.querySelector('.hit-area');hit.onmousemove=e=>{{let bounds=hit.getBoundingClientRect(),fraction=(e.clientX-bounds.left)/bounds.width,i=Math.max(0,Math.min(DATA.days.length-1,Math.round(fraction*(DATA.days.length-1)))),date=DATA.days[i],line=svg.querySelector('.hoverline');line.setAttribute('x1',x(i));line.setAttribute('x2',x(i));line.setAttribute('visibility','visible');let rows=chartProviders().map(p=>{{let d=p.daily[i];if(type==='tokens')return `<span style="color:${{p.color}}">${{esc(p.label)}}</span>：${{num(d.tokens)}} Token`;let sub=dailyCost(p.plan,date),api=apiValue(d,date),priced=d.tokens>d.unpriced,ratio=priced&&sub&&api!==null?api/sub:null,status=sub===null?'汇率不可用':!sub?'无生效计划':!d.tokens?'无用量记录':!priced?'模型未计价':ratio===null?'汇率不可用':ratio.toFixed(2)+'×'+(d.unpriced?'（仅已计价部分）':'');return `<span style="color:${{p.color}}">${{esc(p.label)}}</span>：${{status}}<br>API ${{cash(api)}} · 日成本 ${{cash(sub)}}`}}).join('<br>');$('tip').innerHTML=`${{date}}<br>${{rows}}`;$('tip').style.display='block';$('tip').style.left=Math.min(e.clientX+14,window.innerWidth-260)+'px';$('tip').style.top=(e.clientY+14)+'px'}};hit.onmouseleave=()=>{{svg.querySelector('.hoverline').setAttribute('visibility','hidden');$('tip').style.display='none'}}}}
 function renderDetails(){{$('tabs').style.gridTemplateColumns=`repeat(${{Math.max(1,DATA.providers.length)}},minmax(0,1fr))`;$('tabs').innerHTML=DATA.providers.map((p,i)=>`<button class="tab ${{i===0?'active':''}}" data-id="${{esc(p.id)}}">${{esc(p.label)}}</button>`).join('');$('details').innerHTML=DATA.providers.map((p,i)=>{{let t=p.totals,subscription=p.daily.reduce((sum,d)=>sum+(dailyCost(p.plan,d.date)||0),0),api=aggregateValue(t,'cost'),hasPriced=t.tokens>t.unpriced,multiple=subscription&&hasPriced&&api!==null?api/subscription:null,rows=p.models.map(m=>{{let modelCost=aggregateValue(m,'cost'),deepseekCost=aggregateValue(m,'deepseek_cost'),estimate=m.pricing_model?`<span class="hint" data-tip="Auto 无法确认实际路由，按当前订阅最低价模型 ${{esc(m.pricing_model)}} 估算">?</span>`:(m.estimated?'（估算）':'');return `<tr><td>${{esc(m.model)}}${{estimate}}</td><td>${{num(m.input)}}</td><td>${{num(m.output)}}</td><td>${{num(m.cached)}}</td><td>${{num(m.tokens)}}</td><td>${{m.cost===null?'未公开价格':cash(modelCost)}}</td><td>${{m.deepseek_tier?`${{cash(deepseekCost)}}<span class="hint" data-tip="${{m.deepseek_tier==='pro'?'对应 DeepSeek V4 Pro':'对应 DeepSeek V4 Flash'}}">?</span>`:'—'}}</td></tr>`}}).join('')||'<tr><td colspan="7" class="empty">本机没有可解析记录</td></tr>';return `<div class="detail ${{i===0?'active':''}}" data-id="${{esc(p.id)}}"><div class="detail-summary"><div class="metric-card"><div class="muted">最近 {days} 天总 Token</div><div class="metric">${{num(t.tokens)}}</div></div><div class="metric-card"><div class="muted">最近 {days} 天 API 等价价值</div><div class="metric">${{cash(api)}}</div></div><div class="metric-card"><div class="muted">最近 {days} 天有效订阅成本<span class="hint" data-tip="按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。">?</span></div><div class="metric">${{cash(subscription)}}</div></div><div class="metric-card"><div class="muted">最近 {days} 天同区间价值倍数</div><div class="metric">
 ${{multipleText(multiple)}}
 </div></div><div class="metric-card"><div class="muted">缓存命中率</div><div class="metric">${{p.cache_hit_rate===null?'—':(p.cache_hit_rate*100).toFixed(1)+'%'}}</div></div><div class="metric-card"><div class="muted">对应 DeepSeek 成本<span class="hint" data-tip="以 DeepSeek 定价核算的成本，缓存命中率已计入">?</span></div><div class="metric">${{p.deepseek_cost===null?'—':cash(aggregateValue(p,'deepseek_cost'))}}</div></div></div><table><thead><tr><th>模型</th><th>输入</th><th>输出</th><th>缓存输入</th><th>总 Token</th><th>API 等价价值</th><th>对应 DeepSeek</th></tr></thead><tbody>${{rows}}</tbody></table></div>`}}).join('');document.querySelectorAll('.tab').forEach(tab=>tab.onclick=()=>{{document.querySelectorAll('.tab,.detail').forEach(x=>x.classList.remove('active'));tab.classList.add('active');document.querySelector(`.detail[data-id="${{CSS.escape(tab.dataset.id)}}"]`).classList.add('active')}})}}
@@ -859,10 +913,21 @@ def collect_usages(
     claude_projects = configured.get(("claude", "claude-code"), claude_projects)
     gemini_sessions = configured.get(("gemini", "gemini-cli"), gemini_sessions)
     grok_sessions = configured.get(("grok", "grok-local"), grok_sessions)
+    minimax_root = configured.get(("minimax", "minimax-agent"))
+    if minimax_root is not None:
+        minimax_database = minimax_root / "sqlite.db"
     since = report_today() - dt.timedelta(days=days - 1)
     enabled = set(DEFAULT_ENABLED_PROVIDERS if enabled_providers is None else enabled_providers)
     codex_usages, codex_files = parse_codex(codex_sessions, since) if "Codex" in enabled else ([], 0)
-    claude_usages, claude_files = parse_claude_code(claude_projects, since) if "Claude Code" in enabled else ([], 0)
+    bound_sources = [(provider, configured[(key, "claude-code")])
+                     for key, provider in (("kimi", "Kimi"), ("glm", "GLM"), ("bailian", "Bailian"))
+                     if (key, "claude-code") in configured]
+    bound_roots = tuple(root for _, root in bound_sources)
+    for index, root in enumerate(bound_roots):
+        for other in bound_roots[index + 1:]:
+            if root.resolve().is_relative_to(other.resolve()) or other.resolve().is_relative_to(root.resolve()):
+                raise ValueError("subscription source directories must not overlap")
+    claude_usages, claude_files = parse_claude_code(claude_projects, since, excluded_roots=bound_roots) if "Claude Code" in enabled else ([], 0)
     gemini_usages, gemini_files = parse_gemini_cli(gemini_sessions, since) if "Gemini CLI" in enabled else ([], 0)
     grok_usages, grok_files = parse_grok_build(grok_sessions, since) if "Grok Build" in enabled else ([], 0)
     minimax_usages, minimax_files = parse_minimax(minimax_database, since) if "MiniMax" in enabled else ([], 0)
@@ -870,7 +935,18 @@ def collect_usages(
         "Codex": codex_files, "Claude Code": claude_files, "Gemini CLI": gemini_files,
         "Grok Build": grok_files, "MiniMax": minimax_files, "Kimi": 0, "GLM": 0, "Bailian": 0,
     }
-    return codex_usages + claude_usages + gemini_usages + grok_usages + minimax_usages, source_files
+    extra_usages = []
+    for provider, root in bound_sources:
+        if provider in enabled:
+            items, count = parse_claude_code(root, since, provider=provider)
+            extra_usages.extend(items)
+            source_files[provider] += count
+    if "Kimi" in enabled:
+        kimi_root = configured.get(("kimi", "kimi-code"), Path.home() / ".kimi" / "sessions")
+        items, count = parse_kimi_wire(kimi_root, since)
+        extra_usages.extend(items)
+        source_files["Kimi"] += count
+    return codex_usages + claude_usages + gemini_usages + grok_usages + minimax_usages + extra_usages, source_files
 
 
 def generate_report(days: int = 30, output: Path = DEFAULT_OUTPUT, pricing_path: Path = DEFAULT_PRICING, language: str = "zh-CN") -> Path:

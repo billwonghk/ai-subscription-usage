@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
-A local, no-account menu-bar / system-tray app that reads on-device usage logs from ChatGPT, Claude Code, Claude Desktop, Gemini CLI, and Grok, then compares 30 days of API-equivalent value against what you actually pay for each subscription. Everything runs on your own machine — no AI API key, no account login, no OAuth/Auth Token/Cookie access, and no cloud service in the loop.
+A local, no-account menu-bar / system-tray app that reads supported on-device usage logs from ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok, and MiniMax, then compares 30 days of API-equivalent value against what you actually pay for each subscription. Kimi, GLM, and Alibaba Bailian can be detected but are not counted until their local formats are verified. Everything runs on your own machine — no AI API key, no account login, no OAuth/Auth Token/Cookie access, and no cloud service in the loop.
 
 ⭐ If this helps you figure out whether your AI subscription is actually worth it, a Star helps other people find it too.
 
@@ -12,26 +12,14 @@ A local, no-account menu-bar / system-tray app that reads on-device usage logs f
 - 30-day dashboard: total/input/output tokens, API-equivalent value, effective subscription cost, and value multiple, per provider
 - Daily token and value-multiple charts, per-model breakdown
 - Subscription plan history (monthly/annual, prorated by effective date)
+- Provider management: add only the subscriptions you want monitored; removed providers are not read, calculated, or displayed
+- USD/CNY subscription entry and report display, converted with dated ECB reference rates
 - Auto-discovery of local usage logs, with a safe, whitelisted way to point it at a non-default folder
-- Model pricing for supported models refreshes automatically about once a week from [OpenRouter](https://openrouter.ai/)'s public API pricing data — no manual editing needed
+- OpenRouter-backed model prices refresh automatically about once a week; every change opens a new dated period so historical reports retain the rate valid on each usage day
 - Seven languages: English, Français, Deutsch, Español, 简体中文, 日本語, 한국어
-- Launch at login, adjustable refresh interval, one-click access to your local data folder
+- Launch at login, automatic daily refresh at 03:00, a 15-minute post-launch catch-up when needed, and one-click access to your local data folder
 - Opt-in, anonymized diagnostics only — never conversation content, file paths, or credentials
 
-**Screenshots**
-
-| Report | Settings |
-| --- | --- |
-| ![Report dashboard](assets/screenshots/report.png) | ![Settings panel](assets/screenshots/settings.png) |
-
-Per-provider detail — including a real cache-hit rate and an estimated cost for the same usage on DeepSeek, matched by measured capability, not price or product name — and the same report in Chinese:
-
-![Claude provider detail with cache-hit rate and DeepSeek cost](assets/screenshots/report-claude-tab.png)
-![Report in Chinese](assets/screenshots/report-zh.png)
-
-The DeepSeek comparison and its full model-to-tier mapping are documented on the in-app configuration guide:
-
-![DeepSeek comparison methodology and model mapping table](assets/screenshots/deepseek-methodology-en.png)
 
 **Getting it**
 
@@ -61,6 +49,8 @@ The macOS build lands in `dist/AI Subscription Usage.app`; the Windows build lan
 | Gemini CLI | ✅ Works, verified | 🟡 Should work — not tested on real Windows |
 | Gemini Desktop (Antigravity/Spark) | ❌ Confirmed not possible | ❌ Likely also not possible (same product) — not specifically confirmed |
 | Grok | 🟡 Code should be correct, but there's no real Grok data on this machine to verify against | 🟡 Also unverified, and Windows testing hasn't happened either |
+| MiniMax | ✅ Local token accounting table verified on macOS | 🟡 Parser is implemented, but not tested on real Windows |
+| Kimi / GLM / Alibaba Bailian | 🟡 Installation and local files can be detected; usage parsing is not enabled until the formats are verified | 🟡 Same detected-only status; not tested on real Windows |
 
 Gemini Desktop (Antigravity/Spark) writes encrypted local session files (`~/.gemini/antigravity/conversations/*.pb`) with no readable structure and no documented safe local API, so token usage for those cannot be read — they show up as detected but unpriced.
 
@@ -84,6 +74,10 @@ The public GitHub release does not contain subscription plans, detection results
 | Antigravity CLI | `~/.gemini/antigravity-cli/` | Auto-detected; not priced while the format is unverified |
 | Grok Build | `~/.grok/logs/unified.jsonl` | Prefers exact input, output, reasoning, and cached tokens |
 | Grok Build fallback | `~/.grok/sessions/**/signals.json` | Used only when `unified.jsonl` isn't present; flagged as an estimate |
+| MiniMax | `~/.minimax/sqlite.db` | Exact input, output, reasoning, cache-read, and cache-write tokens from the local accounting table |
+| Kimi | `~/.kimi-code/sessions/` or `~/.kimi/sessions/` | Detected only; local usage format is not yet verified or counted |
+| GLM | `~/.glm/` or `~/.zhipu/` | Detected only; local usage format is not yet verified or counted |
+| Alibaba Bailian | `~/.bailian/` or `~/.aliyun/` | Detected only; local usage format is not yet verified or counted |
 
 Model names must match `config/pricing.json` exactly. Unknown models still have their tokens counted, but no API-equivalent value is calculated for them, and no other model's price is applied. The pricing database can store different prices per effective date; historical records use whichever price was in effect on that day.
 
@@ -97,7 +91,7 @@ Output is written to `outputs/ai-usage-report.html`. The "Refresh local data" bu
 
 ## macOS menu bar & Windows tray
 
-The desktop app provides: open report, refresh now, update model pricing, check for app updates, switch language, configuration & user guide, an anonymous-diagnostics toggle, and quit. A left click refreshes the report and reuses an already-open report tab; it opens a new tab only when no report page is active. On first launch it opens the report. The configuration & user guide shows local data-source detection status, diagnostic commands, calculation rules, and a safe configuration prompt you can copy to your own local AI assistant. By default it refreshes local data and checks the app version every 24 hours.
+The desktop app provides: open report, refresh now, update model pricing, check for app updates, switch language, configuration & user guide, an anonymous-diagnostics toggle, and quit. A left click immediately opens or reuses the existing report without refreshing it. On first launch, the app creates an initial report when none exists. After that, local data refreshes once per local calendar day at 03:00; if that refresh was missed, the app refreshes 15 minutes after its next launch unless the current day already has a successful refresh. “Refresh now” remains available, and a successful manual refresh counts as that day's refresh. App-version checks remain on their existing 24-hour interval.
 
 ## Auto-discovery & AI-assisted configuration
 
@@ -126,7 +120,7 @@ The desktop shell ships with English, French, German, Spanish, Simplified Chines
 
 `config/pricing.json` stores the pricing version, official sources, model prices, and effective dates. The client downloads pricing updates from a manifest, verifies the SHA-256 checksum and field structure, then atomically replaces the local pricing database. This tool is meant to show a trend, not to be a perfectly precise pricing reference, so the update source is [OpenRouter](https://openrouter.ai/)'s public API pricing data — a well-known LLM proxy whose API prices generally track official rates.
 
-`config/model_id_map.json` maps this project's local model names to their exact OpenRouter model id. `scripts/fetch_pricing.py` uses that map to pull current prices and rewrite `config/pricing.json` and `config/pricing-manifest.json`; `.github/workflows/update-pricing.yml` runs it automatically about once a week and commits only if a price actually changed. A genuine price change is recorded as a new dated period so past report dates keep using whatever rate was actually in effect back then. Models that already use a hand-written dated schedule are left untouched by the automation. When usage logs show a brand-new model name that isn't in the map yet, it's simply shown as unpriced until a line is added to `config/model_id_map.json` — the desktop app also tries an on-the-spot price refresh the moment it detects a new model.
+`config/model_id_map.json` maps this project's local model names to their exact OpenRouter model id. `scripts/fetch_pricing.py` uses that map to pull current prices and rewrite `config/pricing.json` and `config/pricing-manifest.json`; `.github/workflows/update-pricing.yml` runs it automatically about once a week and commits only if a price actually changed. OpenRouter-backed models remain eligible after they acquire a dated history: a genuine change closes the current period and opens a new one, so past report dates keep using the rate valid at the time. Entries maintained from another named source, such as an official regional price, are not overwritten by OpenRouter automation. When usage logs show a brand-new model name that isn't in the map yet, it is shown as unpriced until the mapping and a verified public price are added; the desktop app also checks the SHA-256-checked pricing manifest when it detects an unknown model.
 
 Each provider's detail tab also shows its cache-hit rate for the period, plus an estimated cost if the same usage had run on [DeepSeek](https://www.deepseek.com/) instead. Explicit Auto records always use DeepSeek V4 Flash; MiniMax M3 uses V4 Pro and MiniMax M2.7 uses V4 Flash. Other models use the capability mapping in `config/deepseek_tier_map.json`. Records with exact timestamps use DeepSeek's Beijing-time peak windows; records without a timestamp use the off-peak rate. The calculation uses the period's real cache-hit/miss split, not a guessed ratio.
 
@@ -136,7 +130,19 @@ Anonymous diagnostics are off by default and only upload after you explicitly tu
 
 ## Automatic releases
 
-`.github/workflows/release.yml` runs tests after a version tag is pushed, builds macOS and Windows artifacts, generates SHA-256 checksums, and creates a GitHub Release. Fully automatic updates additionally require a GitHub repo address, a macOS Developer ID, notarization credentials, and a Windows code-signing certificate.
+`.github/workflows/release.yml` runs tests after a version tag is pushed, builds macOS and Windows artifacts, generates SHA-256 checksums, and creates a GitHub Release. The current application checks for releases and opens the GitHub download page; in-app download and launch of the Windows installer is planned but not yet implemented. macOS will use manual download and application replacement: this project has no paid Apple Developer Program membership and therefore does not use Developer ID signing or Apple notarization.
+
+## Interface language
+
+### Local application lifecycle
+
+The application serves its browser report on loopback only (`127.0.0.1:17653`). Users do not need to start a server or manage ports. A per-user OS lock allows one application instance; another launch asks the existing instance to open the report and exits. Finder reopen events on macOS are handled by the existing application. Quitting cancels background timers and closes the listener. The OS releases the instance lock after a process exit, including a crash; the lock file does not need to be deleted.
+
+The Windows installer uses Restart Manager to close the running application before replacing its executable; its post-install launch option starts the new version. macOS continues to use manual download and replacement. If another program or a legacy application occupies the address, startup reports the conflict without killing an unknown process or opening a second port. Packaged-app acceptance of this lifecycle and the Windows installer settings is still pending.
+
+Select **中文** or **English** in Settings. The choice is saved immediately and applied to Settings, the cached report, the configuration guide and the tray menu. Existing report tabs load the new language through their state check. Switching language does not scan usage or refresh prices, and does not change subscription amounts, currencies, provider identifiers or model IDs. Before the first report exists, the saved choice applies when that report is generated.
+
+The English report includes currency controls, exchange-rate dates, subscription-save errors, Auto estimates and unpriced-model notices. Alibaba Bailian uses an English display label while retaining its internal subscription key. Daily value-multiple tooltips distinguish missing usage records from unpriced models and mark partially priced totals as “priced portion only”.
 
 ## License
 

@@ -24,8 +24,8 @@ def _load_json(path: Path) -> dict:
 
 
 EN = {
-    "title": "AI Subscription Usage: Configuration and User Guide", "intro": "This tool reads local AI usage records and calculates the last 30 days of API-equivalent value, subscription cost, and value multiple. No AI API is required.",
-    "start": "First use", "start_body": "Choose Refresh now. The app checks known local directories and reports missing records, permissions, or unsupported formats.",
+    "title": "AI Subscription Usage: Configuration and User Guide", "intro": "This tool reads local AI usage records and calculates the last 30 days of API-equivalent value, subscription cost, and value multiple. No AI API is required. It refreshes once per local day at 03:00; if missed, it refreshes 15 minutes after the next launch unless today's refresh already succeeded. Clicking the menu-bar icon only opens the existing report.",
+    "start": "First use", "start_body": "The app creates an initial report when none exists. After that, choose Refresh now only when you need an extra manual refresh. The app checks known local directories and reports missing records, permissions, or unsupported formats.",
     "sources": "Data sources", "sources_body": "ChatGPT uses internal Codex JSONL; Claude uses Claude JSONL; Gemini CLI uses chat JSON; MiniMax uses its local token accounting table. Antigravity, Grok, Kimi, GLM, and Alibaba Bailian are detected separately; unverified formats are never presented as usage data.",
     "ai": "Configure with your local AI", "ai_body": "Give the English setup prompt below to a local AI. It may only run read-only diagnostics and validated configuration commands.",
     "security": "Security boundary", "security_body": "OAuth, auth tokens, cookies, Keychain, and conversation content are never read.",
@@ -75,6 +75,8 @@ TEXT = {
 }
 
 TEXT["zh-CN"]["sources_body"] = "ChatGPT 使用内部 Codex JSONL；Claude 使用 Claude JSONL；Gemini CLI 使用聊天 JSON；MiniMax 使用本机 Token 计量表。Antigravity、Grok、Kimi、GLM 和阿里百炼单独检测；未经验证的格式不会显示为用量数据。"
+TEXT["zh-CN"]["intro"] = "本工具读取本机 AI 用量记录，计算最近 30 天 API 等价价值、订阅成本和价值倍数。计算不需要 AI API。报表按本机时间每天凌晨 3:00 后台更新一次；当天未成功更新时，应用启动 15 分钟后补更新一次。点击状态栏图标只打开已有报表。"
+TEXT["zh-CN"]["start_body"] = "首次安装尚无报表时会生成初始报表。之后仅在需要额外更新时选择“立即更新”。程序检查已知本机目录，并明确显示没有记录、权限不足或格式不支持。"
 TEXT["zh-CN"]["pricing_body"] = "普通输入、缓存读取、缓存写入和输出分别计价。未知的具名模型保持未计价。日志明确记录为 Auto 时，按记录日期选择该订阅当时可用的最低价模型估算：Codex 在 2026-08-30 及以前使用 GPT-5.4 mini，从 2026-08-31 起使用 GPT-5.6 Luna。OpenRouter 价格自动更新，人工维护的官方价格保留来源。"
 TEXT["zh-CN"]["deepseek_body"] = "缓存命中率和 DeepSeek 对比成本都使用最近 30 天真实用量。Auto 记录统一对应 DeepSeek V4 Flash；MiniMax M3 对应 V4 Pro，MiniMax M2.7 对应 V4 Flash；其他具名模型按实测能力对应 Flash 或 Pro。记录包含准确时间时，北京时间 9:00–12:00、14:00–18:00 按高峰价计算，其余按空闲价；记录没有准确时间时统一按空闲价。缓存命中和未命中使用真实记录，不使用猜测比例。"
 
@@ -94,7 +96,9 @@ def render_help(
     if deepseek_tiers is None:
         raw_tiers = _load_json(DEFAULT_DEEPSEEK_TIER_MAP)
         deepseek_tiers = {key: value for key, value in raw_tiers.items() if not key.startswith("_")}
-    rows = "".join(f"<tr><td>{html.escape(x['label'])}</td><td>{html.escape(x['surface'])}</td><td>{html.escape(x['status'])}</td><td>{x['matching_files']}</td></tr>" for x in doctor_report()["discovered_sources"])
+    def display_label(value: str) -> str:
+        return "Alibaba Bailian" if language == "en" and value == "阿里百炼" else value
+    rows = "".join(f"<tr><td>{html.escape(display_label(x['label']))}</td><td>{html.escape(x['surface'])}</td><td>{html.escape(x['status'])}</td><td>{x['matching_files']}</td></tr>" for x in doctor_report()["discovered_sources"])
     sections = "".join(f"<section><h2>{html.escape(t[key])}</h2><p>{html.escape(t[key + '_body'])}</p></section>" for key in ("start", "sources", "ai", "security", "pricing", "trouble"))
 
     models = pricing.get("models") if isinstance(pricing.get("models"), dict) else {}

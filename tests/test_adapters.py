@@ -205,6 +205,31 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(usages[0].cache_write_input_tokens, 10)
         self.assertEqual(usages[0].total_tokens, 195)
 
+    def test_collect_usages_uses_configured_minimax_directory(self):
+        configured_root = Path("/validated/minimax-data")
+        with mock.patch.object(report, "load_configured_sources", return_value=[{
+            "provider": "minimax", "surface": "minimax-agent", "path": str(configured_root),
+        }]), mock.patch.object(report, "parse_minimax", return_value=([], 0)) as parser:
+            report.collect_usages(30, enabled_providers=["MiniMax"])
+        parser.assert_called_once_with(configured_root / "sqlite.db", mock.ANY)
+
+    def test_daily_value_chart_checks_pricing_per_day(self):
+        page = report.render_dashboard(
+            [
+                report.Usage("Codex", "priced-model", "2026-08-10", 100, 0),
+                report.Usage("Codex", "unknown-model", "2026-08-11", 100, 0),
+            ],
+            2,
+            {"Codex": 2},
+            {
+                "models": {"priced-model": {"input_per_million": 1, "cached_input_per_million": 1, "output_per_million": 1}},
+                "subscriptions": {},
+            },
+            enabled_providers=["Codex"],
+        )
+        self.assertIn("priced=d.tokens>d.unpriced", page)
+        self.assertNotIn("priced=p.totals.tokens>p.totals.unpriced", page)
+
     def test_settings_page_lists_provider_controls_and_safe_ai_prompt(self):
         page = render_settings(
             "zh-CN",

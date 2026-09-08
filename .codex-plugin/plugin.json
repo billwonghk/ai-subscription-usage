@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Generate an offline local report for subscription AI token usage.",
   "author": {
-    "name": "Bill"
+    "name": "AI Subscription Usage contributors"
   },
   "license": "MIT",
   "keywords": ["usage", "tokens", "codex", "claude", "gemini", "grok"],
@@ -12,7 +12,7 @@
     "displayName": "AI Subscription Usage",
     "shortDescription": "Local AI subscription usage report",
     "longDescription": "Reads local session records and creates an offline HTML usage report without account credentials or a server.",
-    "developerName": "Bill",
+    "developerName": "AI Subscription Usage contributors",
     "category": "Productivity",
     "capabilities": ["Interactive", "Write"],
     "defaultPrompt": [

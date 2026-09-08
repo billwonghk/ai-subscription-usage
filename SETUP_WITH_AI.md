@@ -21,3 +21,13 @@ On macOS, the executable inside the downloaded application bundle can be called 
 ```
 
 On Windows, call the downloaded `AI Subscription Usage.exe` with the same arguments.
+
+## Coding Plan sources in the unreleased working version
+
+Kimi Code's persisted `wire.jsonl` records expose per-step `StatusUpdate.token_usage` counters and timestamps. The parser reads these counters, not the context-window size. The official persisted status format does not include a model ID; those records remain unpriced until a verified historical model identity is available. Never infer a past model from the client's current settings.
+
+For Kimi, GLM or Alibaba Bailian used through Claude Code, `--configure-source` accepts provider `kimi`, `glm` or `bailian`, surface `claude-code`, and format `claude-jsonl`. Bind only a directory whose entire history belongs to that subscription. A model name is not proof of subscription ownership: Bailian can serve other vendors' models. Do not bind a mixed-provider directory. Do not change a binding to represent only a new provider while leaving the old provider's history in that directory. No third-party client configuration is modified by this command.
+
+Explicitly bound directories are excluded from the default Claude scan even when the assigned provider is disabled. Overlapping third-party source bindings are rejected. Existing message IDs are deduplicated within each bound scan. Cross-client copies without a shared identity are not globally deduplicated, so select one authoritative source for each set of requests.
+
+These adapters have format-based automated tests; real Kimi, GLM and Bailian client acceptance is pending. A successfully configured path proves readable matching files, not complete pricing or verified subscription ownership.

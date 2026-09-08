@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文** | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
-一个本地运行、不用注册账号的菜单栏/系统托盘应用，读取本机 ChatGPT、Claude Code、Claude Desktop、Gemini CLI 和 Grok 的用量记录，把最近 30 天的 API 等价价值和你实际付的订阅费做对比。所有计算都在你自己的电脑上完成——不需要 AI API Key，不需要账号登录，不读取 OAuth/Auth Token/Cookie，也不经过任何云端服务。
+一个本地运行、不用注册账号的菜单栏/系统托盘应用，读取本机 ChatGPT、Claude Code、Claude Desktop、Gemini CLI、Grok 和 MiniMax 已支持的用量记录，把最近 30 天的 API 等价价值和你实际付的订阅费做对比。Kimi、GLM 和阿里百炼目前只检测安装与记录文件，格式验证完成前不计入用量。所有计算都在你自己的电脑上完成——不需要 AI API Key，不需要账号登录，不读取 OAuth/Auth Token/Cookie，也不经过任何云端服务。
 
 ⭐ 如果这个工具帮你看清了自己的 AI 订阅到底值不值，点个 Star 能让更多人也看到它。
 
@@ -12,26 +12,14 @@
 - 30 天仪表盘：每个平台的总/输入/输出 Token、API 等价价值、有效订阅成本和价值倍数
 - 每日 Token 和每日价值倍数图表，按模型拆分明细
 - 订阅计划历史（按月/按年，按生效日期分摊）
+- 平台管理：只添加自己需要监控的订阅；移除的平台不读取、不计算、不显示
+- 支持用 USD 或 CNY 填写订阅金额和切换报表显示，按 ECB 每日参考汇率换算
 - 自动发现本机用量记录，也提供一个安全的、白名单式的方法指定非默认目录
-- 已支持模型的价格大约每周自动从 [OpenRouter](https://openrouter.ai/) 的公开 API 价格数据更新一次，不用手动维护
+- OpenRouter 支持的模型价格大约每周自动更新；每次变价建立新的日期区间，历史报表继续使用用量当天有效的价格
 - 支持七种语言：简体中文、English、日本語、한국어、Français、Deutsch、Español
-- 开机自启、可调整刷新频率、一键打开本机数据文件夹
+- 开机自启、每天凌晨 3:00 自动更新、当天漏更时启动 15 分钟后补更新、一键打开本机数据文件夹
 - 诊断信息默认关闭，需要手动开启才上传，且从不上传对话内容、文件路径或密钥
 
-**截图**
-
-| 报表 | 设置 |
-| --- | --- |
-| ![报表首页](assets/screenshots/report.png) | ![设置页面](assets/screenshots/settings.png) |
-
-各平台明细——包含真实的缓存命中率，以及同样这批用量如果换成 DeepSeek 大概要花多少钱（按实测能力对应档位，不是按价格或产品名字），以及中文版报表：
-
-![Claude 平台明细，含缓存命中率和 DeepSeek 对比成本](assets/screenshots/report-claude-tab.png)
-![中文版报表](assets/screenshots/report-zh.png)
-
-DeepSeek 对比用的方法和完整的模型对应关系表，都写在软件自带的"配置及使用说明"页面里：
-
-![DeepSeek 对比方法和模型对应关系表](assets/screenshots/deepseek-methodology-zh.png)
 
 **获取方式**
 
@@ -61,6 +49,8 @@ macOS 编译结果在 `dist/AI Subscription Usage.app`；Windows 编译结果在
 | Gemini CLI | ✅ 能，已验证 | 🟡 理论上能，没在真 Windows 上测过 |
 | Gemini 桌面版（Antigravity/Spark） | ❌ 确认不行，文件是加密的 | ❌ 大概率也不行（同一个产品），但没在 Windows 上专门确认过 |
 | Grok | 🟡 代码是对的，但本机没有真实 Grok 数据，没法验证准不准 | 🟡 同样没验证，而且 Windows 更没测过 |
+| MiniMax | ✅ 已在 macOS 验证本机 Token 计量表 | 🟡 已实现解析器，但没有在真实 Windows 上测试 |
+| Kimi / GLM / 阿里百炼 | 🟡 可检测安装和本机文件；格式验证完成前不启用用量解析 | 🟡 同样只检测，且没有在真实 Windows 上测试 |
 
 Gemini 桌面版（Antigravity/Spark）把本地会话记录写成加密文件（`~/.gemini/antigravity/conversations/*.pb`），结构没法读，也没有公开、安全的本机接口，所以这部分 Token 用量读不出来——会显示"检测到但未计价"。
 
@@ -76,7 +66,7 @@ GitHub 通用发布包不包含订阅计划、检测结果、本机绝对路径�
 
 macOS 版本运行在顶部菜单栏。Windows 版本运行在右下角系统托盘，由 GitHub Actions 的 Windows Runner 构建 `AI Subscription Usage.exe` 和 Inno Setup 安装程序。
 
-报表顶部展示总 Token、输入 Token、输出 Token、API 等价价值、有效订阅成本和价值倍数。页面还提供四个平台的每日 Token、每日价值倍数、模型明细和未计价 Token。月订阅按 30 天、年订阅按 360 天分摊，计划生效日前不计算订阅成本。
+报表顶部展示总 Token、输入 Token、输出 Token、API 等价价值、有效订阅成本、价值倍数和对应 DeepSeek 成本。用户在设置中添加的平台才会被读取和显示，标签数量变化时保持等宽排列。页面提供每日 Token、每日价值倍数、缓存命中率、模型明细、未计价 Token 和逐模型 DeepSeek 对比。订阅计划可以使用 USD 或 CNY 保存并按生效日期保留历史；月订阅按 30 天、年订阅按 360 天分摊，跨币种金额按每天的 ECB 参考汇率换算。
 
 ## 数据来源
 
@@ -90,6 +80,10 @@ macOS 版本运行在顶部菜单栏。Windows 版本运行在右下角系统托
 | Antigravity CLI | `~/.gemini/antigravity-cli/` | 自动检测；未验证格式不计价 |
 | Grok Build | `~/.grok/logs/unified.jsonl` | 优先读取精确输入、输出、推理和缓存 Token |
 | Grok Build 降级来源 | `~/.grok/sessions/**/signals.json` | 仅在没有 `unified.jsonl` 时使用，标记为估算 |
+| MiniMax | `~/.minimax/sqlite.db` | 从本机计量表读取精确输入、输出、推理、缓存读取和缓存写入 Token |
+| Kimi | `~/.kimi-code/sessions/` 或 `~/.kimi/sessions/` | 只检测；本机格式尚未验证，不计入用量 |
+| GLM | `~/.glm/` 或 `~/.zhipu/` | 只检测；本机格式尚未验证，不计入用量 |
+| 阿里百炼 | `~/.bailian/` 或 `~/.aliyun/` | 只检测；本机格式尚未验证，不计入用量 |
 
 模型名必须与 `config/pricing.json` 精确匹配。未知模型继续统计 Token，但不计算 API 等价价值，也不会套用其他模型价格。价格库支持按生效日期保存不同价格，历史记录使用当天有效价格。
 
@@ -103,11 +97,11 @@ python3 src/ai_usage_report.py --days 30
 
 ## macOS 菜单栏与 Windows 托盘
 
-桌面应用提供打开报表、立即更新、更新模型价格、检查应用更新、切换语言、配置及使用说明、匿名诊断开关和退出。首次启动自动打开配置及使用说明，其中显示本机数据源检测状态、诊断命令和可复制给本机 AI 的安全配置提示词。默认每 24 小时更新一次本机数据并检查应用版本。
+桌面应用提供打开报表、立即更新、更新模型价格、检查应用更新、切换语言、配置及使用说明、匿名诊断开关和退出。左键点击状态栏图标只会立即打开或复用已有报表，不会触发刷新。首次安装没有报表时会生成初始报表。之后按本机时间每天凌晨 3:00 更新一次；当天漏更时，应用在下次启动 15 分钟后补更新；当天已经成功更新则跳过。手动“立即更新”成功后也记为当天已经更新。应用版本检查仍按原来的 24 小时间隔执行。
 
 ## 自动发现与 AI 辅助配置
 
-应用只检查已登记的默认目录，不扫描整个硬盘。运行 `AI Subscription Usage --doctor --json` 查看 ChatGPT、Claude Desktop、Claude Code、Gemini CLI、Antigravity Desktop、Antigravity CLI 和 Grok 的检测状态。非默认目录使用受控命令配置：
+应用只检查已登记的默认目录，不扫描整个硬盘。运行 `AI Subscription Usage --doctor --json` 查看 ChatGPT、Claude Desktop、Claude Code、Gemini CLI、Antigravity Desktop、Antigravity CLI、Grok、MiniMax、Kimi、GLM 和阿里百炼的检测状态。非默认目录使用受控命令配置；只有白名单中的平台、使用端、格式和现有只读目录可以保存：
 
 ```bash
 AI\ Subscription\ Usage --configure-source --provider chatgpt --surface chatgpt-desktop --format codex-jsonl --path "$HOME/.codex/sessions"
@@ -132,7 +126,7 @@ python3 -m venv .venv-desktop
 
 `config/pricing.json` 保存价格版本、官方来源、模型价格和生效日期。客户端从价格清单下载价格文件，先校验 SHA-256 和字段结构，再原子替换本机价格库。这个工具的定位是看个大概趋势，不是一个非常精准的报价工具，所以价格更新数据用的是 [OpenRouter](https://openrouter.ai/) 的公开 API 价格接口——它是知名的大模型中转站，API 价格一般跟官网保持一致。
 
-`config/model_id_map.json` 把本项目本机的模型名字对应到 OpenRouter 那边确切的模型 id。`scripts/fetch_pricing.py` 按这张表去抓当前价格，重新生成 `config/pricing.json` 和 `config/pricing-manifest.json`；`.github/workflows/update-pricing.yml` 大约每周自动跑一次，价格真的变了才会提交。价格真的变化时会记成一条新的、带日期的价格区间，这样过去日期的报表还是按当时实际生效的价格算，不会被最新价格覆盖。已经手动写好日期区间的模型，自动流程不会去动它，交给人工维护。本机日志里出现全新的模型名字、对照表里还没有的，会先显示未计价，等 `config/model_id_map.json` 里加上一行才会计价——桌面应用侦测到新模型的那一刻，也会顺便自动尝试抓一次最新价格。
+`config/model_id_map.json` 把本项目本机模型名对应到 OpenRouter 的准确模型 ID。`scripts/fetch_pricing.py` 按这张表抓取当前价格并更新 `config/pricing.json` 与 `config/pricing-manifest.json`；`.github/workflows/update-pricing.yml` 大约每周运行一次，只有价格确实变化才提交。OpenRouter 来源的模型即使已经有历史日期区间也继续自动更新：变价时关闭当前区间并新建当天生效的区间，过去日期继续使用当时有效的价格。标明由其他来源人工维护的条目不会被 OpenRouter 覆盖。本机日志出现未映射的新模型时先统计 Token、金额显示未计价；加入模型映射并核实公开价格后才开始计价，桌面应用检测到未知模型时也会检查经过 SHA-256 校验的价格清单。
 
 每个平台的详情标签页，还会显示这段时间的缓存命中率，以及"如果这批用量改用 [DeepSeek](https://www.deepseek.com/) 跑，大概多少钱"的估算。每个模型会按能力档位对应到 DeepSeek V4 的 Flash 或 Pro（对应关系见 `config/deepseek_tier_map.json`），价格用的是 DeepSeek 自己的公开价格（同样通过 OpenRouter 自动更新），命中/未命中的比例用的是这段时间真实的缓存数据，不是猜的比例。旗舰型号在 DeepSeek 那边没有真正对得上的档位，也还是按 Pro 来算，故意往 DeepSeek 那边让一步，这样比出来的结果不会显得对 DeepSeek 不公平。
 
@@ -142,7 +136,23 @@ python3 -m venv .venv-desktop
 
 ## 自动发布
 
-`.github/workflows/release.yml` 在版本标签推送后执行测试，构建 macOS 与 Windows 产物，生成 SHA-256 校验文件并创建 GitHub Release。正式自动更新还需要 GitHub 仓库地址、macOS Developer ID、公证凭证和 Windows 代码签名证书。
+### 本机应用生命周期
+
+应用通过仅监听本机的 `127.0.0.1:17653` 提供浏览器报表。用户不需要启动服务器或手动管理端口。每个用户只运行一个应用实例；重复启动通知已有应用打开报表后退出自身，macOS 的 Finder 重新打开事件也交给已有应用处理。退出应用会取消后台定时任务并关闭监听端口。异常退出后，操作系统释放实例锁，不需要删除锁文件。
+
+Windows 安装器使用系统 Restart Manager 在替换应用前关闭正在运行的程序，安装完成后由安装界面的启动选项打开新版本。macOS 仍按手动下载和替换应用的方式更新。端口被其他程序或不支持单实例协议的旧版占用时，本次启动提示失败，不杀死未知进程、不另开端口。新版本的生命周期代码和 Windows 安装器设置仍需安装包验收。
+
+### 界面语言
+
+在设置页点击“中文”或“English”，选择会立即保存，并切换设置页、已有报表、配置及使用说明和状态栏菜单。切换语言不扫描用量、不更新价格，也不修改订阅金额、币种、平台标识或模型标识。已打开的报表通过状态检查加载新语言。首次尚未生成报表时，语言选择先保存，后续生成报表使用该语言。
+
+英文界面包含货币切换、汇率日期、订阅保存失败、Auto 估算和未计价提示。技术模型 ID 保留原文；“阿里百炼”在英文界面显示为 Alibaba Bailian，内部订阅键不变。每日价值倍数图区分无用量记录与模型未计价；只计算部分 Token 时，悬停提示标注“仅已计价部分”。
+
+`.github/workflows/release.yml` 在版本标签推送后执行测试，构建 macOS 与 Windows 产物，生成 SHA-256 校验文件并创建 GitHub Release。当前应用支持检查新版本并打开 GitHub Release 页面，尚未实现应用内下载安装。
+
+### 下一版本更新方案（待实现）
+
+Windows 版本支持在应用内下载并启动更新。macOS 版本因未开通 Apple Developer Program 付费会员，无法使用 Developer ID 签名和 Apple 公证，因此暂不支持自动安装更新，用户需手动下载并替换应用。
 
 ## 许可证
 

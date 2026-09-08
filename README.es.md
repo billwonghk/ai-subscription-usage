@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | **Español**
 
-Una aplicación de barra de menú / bandeja del sistema, local y sin necesidad de cuenta, que lee los registros de uso almacenados en tu propio equipo de ChatGPT, Claude Code, Claude Desktop, Gemini CLI y Grok, y compara el valor equivalente en API de los últimos 30 días con lo que realmente pagas por cada suscripción. Todo se ejecuta en tu propio equipo — sin clave de API de IA, sin inicio de sesión de cuenta, sin acceso a OAuth/Auth Token/Cookies, y sin ningún servicio en la nube de por medio.
+Aplicación local de barra de menú o bandeja del sistema, sin cuenta, que lee los registros compatibles de ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok y MiniMax, y compara el valor API de los últimos 30 días con el coste real de cada suscripción. Kimi, GLM y Alibaba Bailian se detectan, pero no se contabilizan hasta verificar su formato local. Todo se ejecuta en el equipo, sin clave API de IA, inicio de sesión, acceso a OAuth/Auth Token/Cookies ni servicio en la nube.
 
 ⭐ Si esta herramienta te ayudó a saber si tu suscripción de IA realmente vale la pena, una Star ayuda a que otras personas la encuentren.
 
@@ -12,26 +12,15 @@ Una aplicación de barra de menú / bandeja del sistema, local y sin necesidad d
 - Panel de 30 días: tokens totales/de entrada/de salida, valor equivalente en API, coste de suscripción efectivo y múltiplo de valor, por proveedor
 - Gráficos diarios de tokens y múltiplo de valor, desglosados por modelo
 - Historial de planes de suscripción (mensual/anual, prorrateado según la fecha de vigencia)
+- Añadir o quitar proveedores supervisados; los proveedores retirados no se leen, calculan ni muestran
+- Entrada y visualización de planes en USD o CNY, convertidos con tipos de referencia diarios del BCE
+- Compatibilidad con la tabla local de tokens de MiniMax; Kimi, GLM y Alibaba Bailian permanecen en modo de detección hasta verificar su formato
 - Detección automática de los registros de uso locales, con un método seguro y de lista blanca para señalar una carpeta que no sea la predeterminada
 - Los precios de los modelos compatibles se actualizan automáticamente alrededor de una vez por semana con los datos públicos de precios de la API de [OpenRouter](https://openrouter.ai/) — sin necesidad de edición manual
 - Siete idiomas: English, Français, Deutsch, Español, 简体中文, 日本語, 한국어
-- Inicio automático al arrancar sesión, intervalo de actualización ajustable, acceso con un clic a tu carpeta de datos locales
+- Inicio automático al iniciar sesión, actualización automática diaria a las 03:00, recuperación 15 minutos después del inicio cuando corresponda y acceso con un clic a la carpeta de datos locales
 - Diagnósticos anonimizados solo mediante consentimiento explícito — nunca contenido de conversaciones, rutas de archivos ni credenciales
 
-**Capturas de pantalla**
-
-| Informe | Ajustes |
-| --- | --- |
-| ![Panel del informe](assets/screenshots/report.png) | ![Panel de ajustes](assets/screenshots/settings.png) |
-
-Detalle por proveedor (tokens y valor por modelo), y el mismo informe en chino:
-
-![Detalle del proveedor Claude](assets/screenshots/report-claude-tab.png)
-![Informe en chino](assets/screenshots/report-zh.png)
-
-El método de comparación con DeepSeek y su correspondencia completa de modelo a nivel están documentados en la guía de configuración integrada en la app:
-
-![Metodología de comparación con DeepSeek y tabla de correspondencia de modelos](assets/screenshots/deepseek-methodology-en.png)
 
 **Cómo obtenerlo**
 
@@ -61,6 +50,8 @@ La compilación de macOS se genera en `dist/AI Subscription Usage.app`; la de Wi
 | Gemini CLI | ✅ Funciona, verificado | 🟡 Debería funcionar — no probado en un Windows real |
 | Gemini Desktop (Antigravity/Spark) | ❌ Confirmado que no es posible | ❌ Probablemente tampoco sea posible (mismo producto) — no confirmado específicamente |
 | Grok | 🟡 El código debería ser correcto, pero no hay datos reales de Grok en este equipo para verificarlo | 🟡 Tampoco verificado, y las pruebas en Windows tampoco se han realizado |
+| MiniMax | ✅ Tabla local de medición verificada en macOS | 🟡 Analizador implementado, sin probar en un Windows real |
+| Kimi / GLM / Alibaba Bailian | 🟡 Se detectan la instalación y los archivos locales; sin análisis antes de verificar el formato | 🟡 Mismo estado de solo detección, sin probar en un Windows real |
 
 Gemini Desktop (Antigravity/Spark) guarda sus archivos de sesión locales de forma cifrada (`~/.gemini/antigravity/conversations/*.pb`), sin una estructura legible ni una API local segura y documentada, por lo que no se puede leer el uso de tokens para este producto — aparece como detectado pero sin precio calculado.
 
@@ -84,6 +75,8 @@ La versión pública publicada en GitHub no contiene planes de suscripción, res
 | Antigravity CLI | `~/.gemini/antigravity-cli/` | Detectado automáticamente; sin precio mientras el formato no esté verificado |
 | Grok Build | `~/.grok/logs/unified.jsonl` | Prioriza la lectura exacta de tokens de entrada, salida, razonamiento y caché |
 | Origen alternativo de Grok Build | `~/.grok/sessions/**/signals.json` | Se usa solo cuando no existe `unified.jsonl`; se marca como estimación |
+| MiniMax | `~/.minimax/sqlite.db` | Tokens exactos de entrada, salida, razonamiento, lectura y escritura de caché desde la tabla local de medición |
+| Kimi / GLM / Alibaba Bailian | Carpetas predeterminadas registradas | Solo detección; no se contabiliza el uso hasta verificar el formato |
 
 Los nombres de los modelos deben coincidir exactamente con `config/pricing.json`. Los modelos desconocidos siguen contabilizando sus tokens, pero no se calcula ningún valor equivalente en API para ellos, ni se les aplica el precio de otro modelo. La base de datos de precios puede almacenar precios distintos según la fecha de vigencia; los registros históricos usan el precio que estaba vigente ese día.
 
@@ -97,7 +90,7 @@ El resultado se escribe en `outputs/ai-usage-report.html`. El botón "Actualizar
 
 ## Barra de menú de macOS y bandeja de Windows
 
-La aplicación de escritorio ofrece: abrir informe, actualizar ahora, actualizar precios de modelos, buscar actualizaciones de la aplicación, cambiar de idioma, configuración y guía de uso, un interruptor de diagnósticos anónimos, y salir. En el primer inicio, abre automáticamente la configuración y guía de uso, que muestra el estado de detección de las fuentes de datos locales, comandos de diagnóstico y una instrucción de configuración segura que puedes copiar a tu propio asistente de IA local. De forma predeterminada, actualiza los datos locales y comprueba la versión de la aplicación cada 24 horas.
+Un clic izquierdo en el icono de la barra de menús abre o reutiliza inmediatamente el informe existente sin actualizarlo. En la primera instalación solo se genera un informe inicial si todavía no existe. Después, los datos se actualizan una vez al día a las 03:00, hora local. Si se perdió esa actualización, se ejecuta 15 minutos después del siguiente inicio, salvo que ya haya finalizado correctamente una actualización ese día. «Actualizar ahora» sigue disponible y, si finaliza correctamente, cuenta como la actualización del día. La comprobación de versión mantiene su intervalo de 24 horas.
 
 ## Detección automática y configuración asistida por IA
 
@@ -126,7 +119,7 @@ La interfaz de escritorio incluye recursos en inglés, francés, alemán, españ
 
 `config/pricing.json` almacena la versión de precios, las fuentes oficiales, los precios de los modelos y las fechas de vigencia. El cliente descarga las actualizaciones de precios desde un manifiesto, verifica la suma de comprobación SHA-256 y la estructura de los campos, y luego reemplaza de forma atómica la base de datos de precios local. Esta herramienta está pensada para mostrar una tendencia, no para ser una referencia de precios perfectamente exacta, así que la fuente de actualización son los datos públicos de precios de la API de [OpenRouter](https://openrouter.ai/) — un proxy de LLM muy conocido cuyos precios de API generalmente siguen las tarifas oficiales.
 
-`config/model_id_map.json` asocia los nombres de modelo locales de este proyecto con su identificador exacto en OpenRouter. `scripts/fetch_pricing.py` usa esa correspondencia para obtener los precios actuales y reescribir `config/pricing.json` y `config/pricing-manifest.json`; `.github/workflows/update-pricing.yml` lo ejecuta automáticamente alrededor de una vez por semana y solo confirma (commit) los cambios cuando un precio realmente ha cambiado. Un cambio de precio real se registra como un nuevo período con fecha, de modo que las fechas de informes pasadas sigan usando la tarifa que realmente estaba vigente entonces. Los modelos que ya tienen un calendario con fechas escrito a mano quedan al margen de esta automatización. Cuando los registros de uso muestran un nombre de modelo completamente nuevo que aún no está en la correspondencia, simplemente se muestra sin precio hasta que se añade una línea en `config/model_id_map.json` — la aplicación de escritorio también intenta una actualización de precios al instante en cuanto detecta un modelo nuevo.
+`config/model_id_map.json` asigna los nombres locales a los identificadores exactos de OpenRouter. Aproximadamente una vez por semana, `scripts/fetch_pricing.py` obtiene los precios vigentes y solo actualiza los archivos de precios y el manifiesto verificado cuando existe un cambio. Los modelos procedentes de OpenRouter siguen actualizándose después de adquirir un historial fechado: cada cambio cierra el período actual y abre otro desde ese día, conservando el precio aplicable a los días anteriores. Las entradas mantenidas desde otra fuente declarada no se sobrescriben. Los modelos nuevos conservan el recuento de tokens, pero permanecen sin precio hasta verificar su correspondencia y tarifa pública.
 
 La pestaña de detalle de cada proveedor también muestra su tasa de aciertos de caché durante el período, además de un coste estimado si el mismo uso se hubiera ejecutado en [DeepSeek](https://www.deepseek.com/). Cada modelo se asigna a un nivel DeepSeek V4 Flash o Pro según su clase de capacidad (véase `config/deepseek_tier_map.json`), usando los precios públicos propios de DeepSeek (también actualizados mediante OpenRouter) y la proporción real de aciertos/fallos de caché de ese período, no una proporción estimada. Los modelos insignia sin un equivalente real en DeepSeek también se comparan con el nivel Pro, deliberadamente a favor de DeepSeek, para que la comparación nunca resulte exagerada.
 

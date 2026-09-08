@@ -39,7 +39,10 @@ DEFINITIONS = (
     SourceDefinition("gemini", "antigravity-cli", "antigravity-cli-session", "Antigravity CLI", ("~/.gemini/antigravity-cli",), ("conversations/*.db", "conversations/*.pb", "conversations/*.trajectory.json"), "detected-only"),
     SourceDefinition("grok", "grok-local", "grok-session", "Grok", ("~/.grok/sessions",), ("**/unified.jsonl", "**/signals.json", "**/chat_history.jsonl"), "exact-or-estimate"),
     SourceDefinition("minimax", "minimax-agent", "minimax-sqlite", "MiniMax", ("~/.minimax",), ("sqlite.db",), "exact"),
-    SourceDefinition("kimi", "kimi-code", "kimi-wire-jsonl", "Kimi", ("~/.kimi-code/sessions", "~/.kimi/sessions"), ("**/wire.jsonl",), "detected-only"),
+    SourceDefinition("kimi", "kimi-code", "kimi-wire-jsonl", "Kimi", ("~/.kimi/sessions", "~/.kimi-code/sessions"), ("**/wire.jsonl",), "exact"),
+    SourceDefinition("kimi", "claude-code", "claude-jsonl", "Kimi via Claude Code", (), ("**/*.jsonl",), "exact"),
+    SourceDefinition("glm", "claude-code", "claude-jsonl", "GLM via Claude Code", (), ("**/*.jsonl",), "exact"),
+    SourceDefinition("bailian", "claude-code", "claude-jsonl", "Bailian via Claude Code", (), ("**/*.jsonl",), "exact"),
     SourceDefinition("glm", "glm-local", "glm-local-records", "GLM", ("~/.glm", "~/.zhipu"), ("**/*.jsonl", "**/*.db"), "detected-only"),
     SourceDefinition("bailian", "bailian-local", "bailian-local-records", "阿里百炼", ("~/.bailian", "~/.aliyun"), ("**/*.jsonl", "**/*.db"), "detected-only"),
 )
@@ -173,6 +176,13 @@ def configure_source(provider: str, surface: str, format_name: str, path: str) -
     validated = validate_source({"provider": provider, "surface": surface, "format": format_name, "path": path})
     sources = load_configured_sources()
     sources = [item for item in sources if (item["provider"], item["surface"]) != (provider, surface)]
+    if surface == "claude-code" and provider != "claude":
+        target = Path(validated["path"])
+        for item in sources:
+            if item["surface"] == "claude-code" and item["provider"] not in {"claude", provider}:
+                other = Path(item["path"])
+                if target.is_relative_to(other) or other.is_relative_to(target):
+                    raise ValueError("subscription source directories must not overlap")
     sources.append(validated)
     payload = {"schema_version": 1, "sources": sorted(sources, key=lambda item: (item["provider"], item["surface"]))}
     CONFIG_ROOT.mkdir(parents=True, exist_ok=True)

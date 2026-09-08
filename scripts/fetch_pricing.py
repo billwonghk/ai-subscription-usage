@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Refresh config/pricing.json from OpenRouter's public pricing API.
 
-Only models listed in config/model_id_map.json are touched. A model whose
-current entry already uses a "periods" schedule is left alone (treated as
-hand-curated). A genuine price change on a flat-rate model is recorded as a
-new period so past report dates keep using the rate that was actually in
-effect back then.
+Only models listed in config/model_id_map.json are touched. OpenRouter-backed
+models keep updating even after they acquire a dated ``periods`` history.
+Models maintained from another source remain untouched. A genuine price
+change is recorded as a new period so past report dates keep using the rate
+that was actually in effect back then.
 """
 
 from __future__ import annotations
@@ -67,19 +67,29 @@ def primary_equal(a: dict[str, Any], b: dict[str, Any]) -> bool:
 
 def update_model(models: dict[str, Any], local_name: str, new_rate: dict[str, float], today: str) -> bool:
     existing = models.get(local_name)
-    if isinstance(existing, dict) and isinstance(existing.get("periods"), list):
-        return False  # hand-curated schedule; leave it to manual maintenance
     if not isinstance(existing, dict):
         models[local_name] = {**new_rate, "source": "openrouter", "updated_at": today}
         return True
-    if primary_equal(existing, new_rate):
-        old_write = existing.get("cache_write_input_per_million")
-        new_write = new_rate.get("cache_write_input_per_million")
-        if new_write is not None and (old_write is None or round(float(old_write), 6) != new_write):
-            existing["cache_write_input_per_million"] = new_write
-            existing["source"] = "openrouter"
-            existing["updated_at"] = today
-            return True
+    if existing.get("source") not in (None, "openrouter"):
+        return False
+    periods = existing.get("periods")
+    if isinstance(periods, list):
+        active = periods[-1] if periods and isinstance(periods[-1], dict) else None
+        if active is None:
+            return False
+        if (primary_equal(active, new_rate) and
+                active.get("cache_write_input_per_million") == new_rate.get("cache_write_input_per_million")):
+            return False
+        if active.get("start_date") == today:
+            periods[-1] = {**new_rate, "start_date": today}
+        else:
+            active["end_date"] = (date.fromisoformat(today) - timedelta(days=1)).isoformat()
+            periods.append({**new_rate, "start_date": today})
+        existing["source"] = "openrouter"
+        existing["updated_at"] = today
+        return True
+    if (primary_equal(existing, new_rate) and
+            existing.get("cache_write_input_per_million") == new_rate.get("cache_write_input_per_million")):
         return False
     yesterday = (date.fromisoformat(today) - timedelta(days=1)).isoformat()
     old_period = {k: v for k, v in existing.items() if k not in ("source", "updated_at", "effective_from")}

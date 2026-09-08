@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import json
 
 
 ZH = [
@@ -117,7 +118,30 @@ EXTRA_TRANSLATIONS = {
 def localize_html(page: str, language: str) -> str:
     if language == "zh-CN" or language not in TRANSLATIONS:
         return page
+    # Translate presentation only. Provider IDs, plan keys and model IDs must
+    # remain byte-for-byte equivalent after parsing the embedded payload.
+    payload_match = re.search(r"const DATA=(.*?);const \$=", page, re.S)
+    payload = None
+    if payload_match:
+        payload = json.loads(payload_match.group(1))
+        page = page[:payload_match.start(1)] + "__REPORT_PAYLOAD__" + page[payload_match.end(1):]
     translated = page.replace('lang="zh-CN"', f'lang="{language}"')
+    if language == "en":
+        additions = {
+            "显示货币": "Display currency", "原币种": "Original currency",
+            "无用量记录": "No usage records", "（仅已计价部分）": " (priced portion only)",
+            "汇率不可用": "Exchange rate unavailable",
+            "Auto 无法确认实际路由，按当前订阅最低价模型": "Auto routing is unknown; estimated using the lowest-priced subscription model",
+            "本机应用未运行，订阅计划没有保存": "Local app is not running; subscription plan was not saved",
+            "订阅金额（${currency}）": "Subscription amount (${currency})",
+            "汇率来源：ECB · 最新参考日期": "Exchange rate source: ECB · Latest reference date",
+            "历史金额按每日参考汇率换算": "Historical amounts use daily reference exchange rates",
+            "汇率尚未取得，当前只能显示 USD": "Exchange rate unavailable; displaying USD only",
+            " 估算": " (estimated)",
+        }
+        for source, target in sorted(additions.items(), key=lambda pair: len(pair[0]), reverse=True):
+            translated = translated.replace(source, target)
+        translated = translated.replace("esc(m.model)", "esc(m.model==='未记录模型'?'Model not recorded':m.model)")
     translated = translated.replace("配置及使用说明", HELP_LINKS[language])
     for source, target in sorted(EXTRA_TRANSLATIONS[language].items(), key=lambda pair: len(pair[0]), reverse=True):
         translated = translated.replace(source, target)
@@ -128,4 +152,10 @@ def localize_html(page: str, language: str) -> str:
         if source in {"最近", "天"}:
             continue
         translated = translated.replace(source, target)
+    if payload is not None:
+        if language == "en":
+            for provider in payload.get("providers", []):
+                if provider.get("label") == "阿里百炼":
+                    provider["label"] = "Alibaba Bailian"
+        translated = translated.replace("__REPORT_PAYLOAD__", json.dumps(payload, ensure_ascii=False).replace("</", "<\\/"))
     return translated

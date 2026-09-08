@@ -13,11 +13,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SELF = Path(__file__).resolve()
 # Absolute-path markers: checked across every tracked file, since a personal
 # path has no legitimate reason to appear anywhere in the public repo.
-PATH_MARKERS = ("/Users/bill", "\\Users\\bill")
+PATH_MARKERS = (str(Path.home()),) if len(Path.home().parts) > 2 else ()
 # Known historical subscription dates: only meaningful within the files that
 # actually ship in the app/release, not in test fixtures that legitimately
 # use plausible-looking example dates.
-SUBSCRIPTION_DATE_MARKERS = ('"start_date": "2026-07-12"', '"start_date": "2026-08-15"', '"start_date": "2026-03-13"')
+SUBSCRIPTION_DATE_MARKERS = ()
 NARROW_TARGETS = (ROOT / "config", ROOT / "locales", ROOT / "SETUP_WITH_AI.md", ROOT / "src")
 EXCLUDED_DIR_NAMES = {
     ".git", "dist", "build", "outputs", "output", ".venv-desktop", ".pyinstaller-cache",
@@ -75,4 +75,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    from release_privacy import main as release_main
+    raise SystemExit(release_main())

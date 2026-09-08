@@ -13,12 +13,12 @@ EN = {
     "language": "Language",
     "autostart": "Launch at login",
     "telemetry": "Send anonymous diagnostics",
-    "refresh_interval": "Refresh interval",
+    "refresh_interval": "Automatic refresh",
+    "refresh_schedule": "Once per local day at 03:00. If missed, refresh 15 minutes after the next launch unless today's refresh already succeeded.",
     "open_data_folder": "Open data folder",
     "clear_diagnostics": "Clear diagnostic records",
     "diagnostics_cleared": "Diagnostic records cleared",
     "report_issue": "Report an issue",
-    "hours_suffix": "hours",
     "on": "On",
     "off": "Off",
     "app_not_running": "Local app is not running",
@@ -67,6 +67,8 @@ TEXT["fr"].update({"enabled": "Ajoutée", "available": "Plateformes disponibles"
 TEXT["de"].update({"enabled": "Hinzugefügt", "available": "Verfügbare Plattformen"})
 TEXT["es"].update({"enabled": "Añadida", "available": "Plataformas disponibles"})
 TEXT["zh-CN"].update({
+    "refresh_interval": "自动刷新",
+    "refresh_schedule": "按本机时间每天凌晨 3:00 更新一次。当天未成功更新时，应用启动 15 分钟后补更新一次；当天已经更新则跳过。",
     "plans": "订阅计划管理",
     "plans_note": "填写错误的订阅计划只能在这里删除，报表卡片不提供删除入口。",
     "no_plans": "尚未保存订阅计划",
@@ -78,25 +80,21 @@ TEXT["zh-CN"].update({
 })
 
 LANGUAGE_NAMES = {"en": "English", "zh-CN": "中文", "ja": "日本語", "ko": "한국어", "fr": "Français", "de": "Deutsch", "es": "Español"}
-REFRESH_HOURS_CHOICES = (6, 12, 24)
 ISSUE_TRACKER_URL = "https://github.com/billwonghk/ai-subscription-usage/issues/new"
 
 
 def render_settings(language: str, current_settings: dict, autostart_enabled: bool, autostart_supported: bool, app_version: str = "development", provider_states: list[dict] | None = None, setup_prompt: str = "", subscription_plans: list[dict] | None = None) -> str:
     """Every control applies and saves immediately on click; there is no separate save step."""
     t = TEXT.get(language, EN)
-    current_refresh_hours = int(current_settings.get("refresh_hours", 24))
     telemetry_on = bool(current_settings.get("telemetry_consent"))
     provider_states = provider_states or []
     subscription_plans = subscription_plans or []
+    def provider_label(value: str) -> str:
+        return "Alibaba Bailian" if language == "en" and value == "阿里百炼" else value
 
     language_buttons = "".join(
-        f'<button class="chip{" active" if code == language else ""}" data-action="set_language" data-value="{html.escape(code)}">{html.escape(name)}</button>'
+        f'<button class="chip{" active" if code == language else ""}" aria-pressed="{str(code == language).lower()}" data-action="set_language" data-value="{html.escape(code)}">{html.escape(name)}</button>'
         for code, name in LANGUAGE_NAMES.items()
-    )
-    refresh_buttons = "".join(
-        f'<button class="chip{" active" if hours == current_refresh_hours else ""}" data-action="set_refresh_hours" data-value="{hours}">{hours} {html.escape(t["hours_suffix"])}</button>'
-        for hours in REFRESH_HOURS_CHOICES
     )
     autostart_row = ""
     if autostart_supported:
@@ -111,7 +109,7 @@ def render_settings(language: str, current_settings: dict, autostart_enabled: bo
         f'{html.escape(t["on"] if telemetry_on else t["off"])}</button></div>'
     )
     provider_cards = "".join(
-        '<article class="provider-card' + (' selected' if item["enabled"] else '') + '"><div class="provider-head"><span class="provider-mark" style="--provider-color:' + html.escape(item.get("color", "#61a8ff")) + '"></span><strong>' + html.escape(item["label"]) + '</strong>'
+        '<article class="provider-card' + (' selected' if item["enabled"] else '') + '"><div class="provider-head"><span class="provider-mark" style="--provider-color:' + html.escape(item.get("color", "#61a8ff")) + '"></span><strong>' + html.escape(provider_label(item["label"])) + '</strong>'
         + (f'<span class="provider-badge">{html.escape(t["enabled"])}</span>' if item["enabled"] else '') + '</div><div class="provider-status"><span class="status-dot status-' + html.escape(item["status"]) + '"></span>'
         + html.escape(t.get(("ready_enabled" if item["enabled"] else "ready_available") if item["status"] == "ready" else item["status"], item["status"])) + '</div><div class="provider-actions">'
         + (f'<button class="action copy-prompt" data-provider="{html.escape(item["label"])}">{html.escape(t["copy_prompt"])}</button>' if item["status"] != "ready" else "")
@@ -120,7 +118,7 @@ def render_settings(language: str, current_settings: dict, autostart_enabled: bo
         for item in provider_states
     )
     plan_rows = "".join(
-        '<div class="plan-row"><div><strong>' + html.escape(plan["provider"]) + '</strong><div class="plan-meta">'
+        '<div class="plan-row"><div><strong>' + html.escape(provider_label(plan["provider"])) + '</strong><div class="plan-meta">'
         + html.escape(plan["start_date"]) + ' · ' + html.escape(str(plan["amount"])) + ' ' + html.escape(plan.get("currency", "USD"))
         + ' / ' + html.escape(t["year"] if plan["cycle"] == "year" else t["month"]) + '</div></div>'
         + '<button class="danger delete-plan" data-provider="' + html.escape(plan["provider"]) + '" data-start="' + html.escape(plan["start_date"]) + '">' + html.escape(t["delete_plan"]) + '</button></div>'
@@ -177,6 +175,6 @@ def render_settings(language: str, current_settings: dict, autostart_enabled: bo
 <section><div class="label">{html.escape(t['providers'])}</div><p class="provider-status">{html.escape(t['providers_note'])}</p><div class="provider-grid">{provider_cards}</div></section>
 <section><div class="label">{html.escape(t['plans'])}</div><p class="provider-status">{html.escape(t['plans_note'])}</p><div class="plan-list">{plan_rows}</div></section>
 <section>{autostart_row}{telemetry_row}</section>
-<section><div class="label">{html.escape(t['refresh_interval'])}</div><div class="chips" style="margin-top:10px">{refresh_buttons}</div></section>
+<section><div class="label">{html.escape(t['refresh_interval'])}</div><p class="provider-status">{html.escape(t['refresh_schedule'])}</p></section>
 <section><div class="action-row"><button class="action" id="open-folder">{html.escape(t['open_data_folder'])}</button><button class="action" id="clear-diagnostics">{html.escape(t['clear_diagnostics'])}</button><a class="action" href="{html.escape(ISSUE_TRACKER_URL)}" target="_blank" rel="noopener">{html.escape(t['report_issue'])}</a></div><div class="status" id="status"></div></section>
 </main><script>{script}</script></body></html>'''

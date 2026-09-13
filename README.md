@@ -26,9 +26,9 @@ A local, no-account menu-bar / system-tray app that reads supported on-device us
 Download the latest build from the [Releases](../../releases) page:
 - **macOS Apple Silicon (M1 and newer)**: `AI-Subscription-Usage-macOS-Apple-Silicon.zip` — unzip it and move `AI Subscription Usage.app` to Applications.
 - **macOS Intel**: `AI-Subscription-Usage-macOS-Intel.zip` — unzip it and move `AI Subscription Usage.app` to Applications.
-- **Windows**: `AI-Subscription-Usage-Windows-Setup.exe` for a normal install (Start Menu shortcut, proper uninstall), or `AI-Subscription-Usage-Windows-Portable.zip` if you'd rather just unzip and run the .exe directly with nothing written to the registry or Program Files.
+- **Windows**: `AI-Subscription-Usage-<version>-Windows-Setup.exe` for a normal install (Start Menu shortcut, proper uninstall), or `AI-Subscription-Usage-Windows-Portable.zip` if you'd rather just unzip and run the .exe directly with nothing written to the registry or Program Files.
 
-Every release also ships a `SHA256SUMS.txt` to verify your download. The Windows build is compiled and self-tested in CI but hasn't been hands-tested on a physical Windows machine yet — see the table below.
+Every release also ships a `SHA256SUMS.txt` to verify your download. The packaged application and installer run on a Windows x64 CI system for self-test, diagnostics, refresh, tray-process lifecycle, UTF-8 page rendering and reinstall data retention. System-tray mouse clicks and menu layout have not been tested manually on physical Windows hardware.
 
 Prefer building from source instead?
 
@@ -45,13 +45,13 @@ The macOS build lands in `dist/AI Subscription Usage.app`; the Windows build lan
 
 | Platform | macOS (desktop + CLI) | Windows (desktop + CLI) |
 | --- | --- | --- |
-| ChatGPT | ✅ Works, verified | 🟡 Same code path, should work — not tested on real Windows |
-| Claude | ✅ Works, verified (desktop and CLI share the same log) | 🟡 Desktop has a dedicated Windows path; CLI should work too — not tested on real Windows |
-| Gemini CLI | ✅ Works, verified | 🟡 Should work — not tested on real Windows |
+| ChatGPT | ✅ Works, verified | 🟡 Packaged Windows application runs in CI; no real Windows ChatGPT log sample verified |
+| Claude | ✅ Works, verified (desktop and CLI share the same log) | 🟡 Packaged Windows application runs in CI; no real Windows Claude log sample verified |
+| Gemini CLI | ✅ Works, verified | 🟡 Packaged Windows application runs in CI; no real Windows Gemini log sample verified |
 | Gemini Desktop (Antigravity/Spark) | ❌ Confirmed not possible | ❌ Likely also not possible (same product) — not specifically confirmed |
 | Grok | 🟡 Code should be correct, but there's no real Grok data on this machine to verify against | 🟡 Also unverified, and Windows testing hasn't happened either |
-| MiniMax | ✅ Local token accounting table verified on macOS | 🟡 Parser is implemented, but not tested on real Windows |
-| Kimi / GLM / Alibaba Bailian | 🟡 Installation and local files can be detected; usage parsing is not enabled until the formats are verified | 🟡 Same detected-only status; not tested on real Windows |
+| MiniMax | ✅ Local token accounting table verified on macOS | 🟡 Parser is included in the CI-tested Windows package; no real Windows MiniMax database sample verified |
+| Kimi / GLM / Alibaba Bailian | 🟡 Installation and local files can be detected; usage parsing is not enabled until the formats are verified | 🟡 Same detected-only status in the CI-tested Windows package |
 
 Gemini Desktop (Antigravity/Spark) writes encrypted local session files (`~/.gemini/antigravity/conversations/*.pb`) with no readable structure and no documented safe local API, so token usage for those cannot be read — they show up as detected but unpriced.
 
@@ -115,7 +115,7 @@ The desktop app is a long-running menu-bar/tray process. Make sure nothing else 
 
 ## Multiple languages
 
-The desktop shell ships with English, French, German, Spanish, Simplified Chinese, Japanese, and Korean resources. It follows the OS language by default and can be switched from the settings page. No calculated field or pricing data changes with language.
+The desktop shell ships with English, French, German, Spanish, Simplified Chinese, Traditional Chinese, Japanese, and Korean resources. It follows the OS language by default and can be switched from the settings page. No calculated field or pricing data changes with language.
 
 ## Pricing database updates
 

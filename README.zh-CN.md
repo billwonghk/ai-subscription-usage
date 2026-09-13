@@ -26,9 +26,9 @@
 去 [Releases](../../releases) 页面下载最新版本：
 - **macOS Apple Silicon（M1 及后续芯片）**：`AI-Subscription-Usage-macOS-Apple-Silicon.zip`——解压后把 `AI Subscription Usage.app` 拖进“应用程序”文件夹。
 - **macOS Intel**：`AI-Subscription-Usage-macOS-Intel.zip`——解压后把 `AI Subscription Usage.app` 拖进“应用程序”文件夹。
-- **Windows**：`AI-Subscription-Usage-Windows-Setup.exe` 是正常安装包（开始菜单快捷方式、能正常卸载）；如果不想往系统里装东西，也可以下 `AI-Subscription-Usage-Windows-Portable.zip`，解压后直接双击里面的 exe 运行。
+- **Windows**：`AI-Subscription-Usage-<版本号>-Windows-Setup.exe` 是正常安装包（开始菜单快捷方式、能正常卸载）；如果不想往系统里装东西，也可以下 `AI-Subscription-Usage-Windows-Portable.zip`，解压后直接双击里面的 exe 运行。
 
-每次发布都附带一个 `SHA256SUMS.txt`，可以用来校验下载文件没被篡改。Windows 版本在 CI 里编译并自测过，但还没有在真实 Windows 电脑上手动测试过，见下面表格。
+每次发布都附带一个 `SHA256SUMS.txt`，可以用来校验下载文件没被篡改。打包后的 Windows 主程序和安装器会在 Windows x64 CI 系统中执行自检、诊断、刷新、托盘进程生命周期、UTF-8 页面渲染和重新安装保留数据测试；系统托盘鼠标点击和菜单布局尚未在 Windows 真机人工操作。
 
 想自己编译源码也可以：
 
@@ -45,13 +45,13 @@ macOS 编译结果在 `dist/AI Subscription Usage.app`；Windows 编译结果在
 
 | 平台 | Mac（桌面版 + 命令行） | Windows（桌面版 + 命令行） |
 | --- | --- | --- |
-| ChatGPT | ✅ 能，已验证 | 🟡 代码逻辑一样，理论上能，但没在真 Windows 上测过 |
-| Claude | ✅ 能，已验证（桌面版和命令行走同一份记录） | 🟡 桌面版专门写了 Windows 路径，命令行理论上也行，但没在真 Windows 上测过 |
-| Gemini CLI | ✅ 能，已验证 | 🟡 理论上能，没在真 Windows 上测过 |
+| ChatGPT | ✅ 能，已验证 | 🟡 Windows 安装包已在 CI 运行；缺少真实 Windows ChatGPT 日志样本验证 |
+| Claude | ✅ 能，已验证（桌面版和命令行走同一份记录） | 🟡 Windows 安装包已在 CI 运行；缺少真实 Windows Claude 日志样本验证 |
+| Gemini CLI | ✅ 能，已验证 | 🟡 Windows 安装包已在 CI 运行；缺少真实 Windows Gemini 日志样本验证 |
 | Gemini 桌面版（Antigravity/Spark） | ❌ 确认不行，文件是加密的 | ❌ 大概率也不行（同一个产品），但没在 Windows 上专门确认过 |
 | Grok | 🟡 代码是对的，但本机没有真实 Grok 数据，没法验证准不准 | 🟡 同样没验证，而且 Windows 更没测过 |
-| MiniMax | ✅ 已在 macOS 验证本机 Token 计量表 | 🟡 已实现解析器，但没有在真实 Windows 上测试 |
-| Kimi / GLM / 阿里百炼 | 🟡 可检测安装和本机文件；格式验证完成前不启用用量解析 | 🟡 同样只检测，且没有在真实 Windows 上测试 |
+| MiniMax | ✅ 已在 macOS 验证本机 Token 计量表 | 🟡 解析器已进入通过 CI 的 Windows 包；缺少真实 Windows MiniMax 数据库样本验证 |
+| Kimi / GLM / 阿里百炼 | 🟡 可检测安装和本机文件；格式验证完成前不启用用量解析 | 🟡 通过 CI 的 Windows 包保持相同的只检测状态 |
 
 Gemini 桌面版（Antigravity/Spark）把本地会话记录写成加密文件（`~/.gemini/antigravity/conversations/*.pb`），结构没法读，也没有公开、安全的本机接口，所以这部分 Token 用量读不出来——会显示"检测到但未计价"。
 
@@ -141,7 +141,7 @@ python3 -m venv .venv-desktop
 
 应用通过仅监听本机的 `127.0.0.1:17653` 提供浏览器报表。用户不需要启动服务器或手动管理端口。每个用户只运行一个应用实例；重复启动通知已有应用打开报表后退出自身，macOS 的 Finder 重新打开事件也交给已有应用处理。退出应用会取消后台定时任务并关闭监听端口。异常退出后，操作系统释放实例锁，不需要删除锁文件。
 
-Windows 安装器使用系统 Restart Manager 在替换应用前关闭正在运行的程序，安装完成后由安装界面的启动选项打开新版本。macOS 仍按手动下载和替换应用的方式更新。端口被其他程序或不支持单实例协议的旧版占用时，本次启动提示失败，不杀死未知进程、不另开端口。新版本的生命周期代码和 Windows 安装器设置仍需安装包验收。
+Windows 安装器使用系统 Restart Manager 在替换应用前关闭正在运行的程序，安装完成后由安装界面的启动选项打开新版本。macOS 仍按手动下载和替换应用的方式更新。端口被其他程序或不支持单实例协议的旧版占用时，本次启动提示失败，不杀死未知进程、不另开端口。Windows 安装包在 Windows x64 Runner 中执行主程序自检、诊断、刷新、托盘进程启动与退出、UTF-8 页面渲染和重新安装保留用户数据测试；系统托盘鼠标点击和菜单布局仍需 Windows 真机人工验收。
 
 ### 界面语言
 

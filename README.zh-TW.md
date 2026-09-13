@@ -23,7 +23,7 @@
 
 ## 取得應用程式
 
-前往 [Releases](../../releases) 頁面下載最新版本。Apple Silicon Mac（M1 及後續晶片）使用者下載 `AI-Subscription-Usage-macOS-Apple-Silicon.zip`，Intel Mac 使用者下載 `AI-Subscription-Usage-macOS-Intel.zip`；解壓縮後把 `AI Subscription Usage.app` 拖入「應用程式」資料夾。Windows 使用者可安裝 `AI-Subscription-Usage-Windows-Setup.exe`，或下載 `AI-Subscription-Usage-Windows-Portable.zip` 後直接執行其中的程式。
+前往 [Releases](../../releases) 頁面下載最新版本。Apple Silicon Mac（M1 及後續晶片）使用者下載 `AI-Subscription-Usage-macOS-Apple-Silicon.zip`，Intel Mac 使用者下載 `AI-Subscription-Usage-macOS-Intel.zip`；解壓縮後把 `AI Subscription Usage.app` 拖入「應用程式」資料夾。Windows 使用者可安裝 `AI-Subscription-Usage-<版本號>-Windows-Setup.exe`，或下載 `AI-Subscription-Usage-Windows-Portable.zip` 後直接執行其中的程式。
 
 每次發行都附有 `SHA256SUMS.txt`，可用於確認下載檔案未被竄改。Windows 版本會在 CI 中編譯並執行自動測試，但尚未在實體 Windows 電腦上完成手動驗證。
 

@@ -35,6 +35,21 @@ class ReleasePrivacyTests(unittest.TestCase):
             'AI-Subscription-Usage-Windows-Portable.zip',
             'AI-Subscription-Usage-{#MyAppVersion}-Windows-Setup',
             'lipo -archs',
+            'Windows tray lifecycle and UTF-8 UI smoke test',
+            'windows-settings-smoke.png',
+            'pattern: ai-subscription-usage-*',
+            'body_path: docs/release-v0.5.1.md',
         ):
             self.assertIn(value, workflow if 'MyAppVersion' not in value else (Path(__file__).resolve().parents[1] / 'installer/windows.iss').read_text(encoding='utf-8'))
         self.assertNotIn('AI-Subscription-Usage-macOS.zip', workflow)
+
+    def test_v051_version_and_release_notes_are_synchronized(self):
+        root = Path(__file__).resolve().parents[1]
+        desktop = (root / 'src/desktop_app.py').read_text(encoding='utf-8')
+        spec = (root / 'ai-subscription-usage.spec').read_text(encoding='utf-8')
+        workflow = (root / '.github/workflows/release.yml').read_text(encoding='utf-8')
+        notes = (root / 'docs/release-v0.5.1.md').read_text(encoding='utf-8')
+        self.assertIn('APP_VERSION = "0.5.1"', desktop)
+        self.assertIn('CFBundleShortVersionString": "0.5.1"', spec)
+        self.assertIn('body_path: docs/release-v0.5.1.md', workflow)
+        self.assertIn('# AI Subscription Usage v0.5.1', notes)

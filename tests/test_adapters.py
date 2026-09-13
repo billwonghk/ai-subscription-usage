@@ -1,4 +1,5 @@
 import datetime as dt
+import html
 import json
 import sqlite3
 import sys
@@ -13,7 +14,7 @@ import fx_rates
 import runtime_data
 from report_view import should_open_new_report
 from report_i18n import localize_html
-from help_page import render_help
+from help_page import AI_PROMPTS, ai_prompt, render_help
 from settings_page import render_settings
 from source_discovery import validate_source
 
@@ -547,8 +548,18 @@ class AdapterTests(unittest.TestCase):
             self.assertIn("--configure-source", page)
             self.assertNotIn("Auth Token</pre>", page)
             self.assertIn("development", page)
+            self.assertIn(html.escape(ai_prompt(language)), page)
+            self.assertIn("--doctor --json", ai_prompt(language))
+            self.assertIn("--verify-sources --json", ai_prompt(language))
+            self.assertIn("--refresh", ai_prompt(language))
+            settings = render_settings(language, {}, False, False, setup_prompt=ai_prompt(language))
+            self.assertIn(json.dumps(ai_prompt(language), ensure_ascii=False), settings)
+        self.assertEqual(set(AI_PROMPTS), {"en", "zh-CN", "zh-TW", "ja", "ko", "fr", "de", "es"})
+        self.assertEqual(len(set(AI_PROMPTS.values())), 8)
         self.assertIn("本机检测结果", render_help("zh-CN"))
+        self.assertIn("默认数据目录会自动识别", render_help("zh-CN"))
         self.assertIn("本機偵測結果", render_help("zh-TW"))
+        self.assertIn("預設資料目錄會自動識別", render_help("zh-TW"))
         self.assertIn('data-set="pricing"', render_help("zh-CN"))
         self.assertIn('data-set="mapping"', render_help("zh-CN"))
         self.assertIn("現在の検出結果", render_help("ja"))

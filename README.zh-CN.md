@@ -109,7 +109,9 @@ AI\ Subscription\ Usage --configure-source --provider chatgpt --surface chatgpt-
 AI\ Subscription\ Usage --verify-sources --json
 ```
 
-`SETUP_WITH_AI.md` 可以交给用户自己的 ChatGPT、Claude Code、Gemini CLI 或其他本机 AI。AI 只能调用上述只读诊断与受控配置命令。配置文件不接受命令、网络地址、凭证或任意解析代码。
+默认目录会自动识别，报表已经显示用量时不需要配置。安装后仍未识别到已有客户端或记录时，在应用内打开“配置及使用说明”，把其中的完整配置提示词复制给能够在同一台电脑上检查文件并运行命令的本机 Codex、Claude Code、WorkBuddy、Gemini CLI 或其他 AI。不能操作这台电脑的普通网页聊天无法完成对接。本机 AI 会诊断已安装的应用，只登记白名单内现有的只读日志目录，验证数据源并刷新一次报表。
+
+`SETUP_WITH_AI.md` 也保存了相同的完整提示词和操作流程。AI 只能调用上述只读诊断与受控配置命令，不得扫描整个硬盘，不得读取凭证或对话正文，不得修改任何 AI 客户端，不得猜测记录格式，也不得把不支持的数据源声称为已经接入。配置文件不接受命令、网络地址、凭证或任意解析代码。
 
 ```bash
 python3 -m venv .venv-desktop

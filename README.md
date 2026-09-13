@@ -103,7 +103,9 @@ AI\ Subscription\ Usage --configure-source --provider chatgpt --surface chatgpt-
 AI\ Subscription\ Usage --verify-sources --json
 ```
 
-`SETUP_WITH_AI.md` can be handed to your own ChatGPT, Claude Code, Gemini CLI, or other local AI assistant — it can only call the read-only diagnostic and controlled-configuration commands above. The configuration file never accepts commands, network addresses, credentials, or arbitrary parsing code.
+Default folders are detected automatically. If the report already shows usage, no setup is required. If an installed client or existing records are still missing, open **Configuration and User Guide** in the app and copy its complete setup prompt into a local Codex, Claude Code, WorkBuddy, Gemini CLI, or another assistant that can inspect files and run commands on the same computer. A web chat without local computer access cannot perform the connection. The assistant diagnoses the packaged app, registers only a supported existing read-only directory, verifies the source, and refreshes the report once.
+
+The same complete prompt and procedure are stored in `SETUP_WITH_AI.md`. The assistant is restricted to the read-only diagnostic and controlled-configuration commands above. It must not scan the whole disk, read credentials or conversation content, modify an AI client, guess a record format, or present an unsupported source as connected. The configuration file never accepts commands, network addresses, credentials, or arbitrary parsing code.
 
 ```bash
 python3 -m venv .venv-desktop

@@ -102,7 +102,9 @@ AI\ Subscription\ Usage --configure-source --provider chatgpt --surface chatgpt-
 AI\ Subscription\ Usage --verify-sources --json
 ```
 
-`SETUP_WITH_AI.md` kann an den eigenen ChatGPT-, Claude-Code-, Gemini-CLI- oder einen anderen lokalen KI-Assistenten übergeben werden — dieser darf ausschließlich die oben genannten schreibgeschützten Diagnose- und kontrollierten Konfigurationsbefehle aufrufen. Die Konfigurationsdatei akzeptiert niemals Befehle, Netzwerkadressen, Zugangsdaten oder beliebigen Parsing-Code.
+Standardordner werden automatisch erkannt. Wenn der Bericht bereits Nutzung anzeigt, ist keine Konfiguration erforderlich. Werden ein installierter Client oder vorhandene Aufzeichnungen weiterhin nicht erkannt, öffnen Sie in der App „Konfiguration und Anleitung“ und geben Sie den vollständigen Konfigurations-Prompt an einen lokalen Codex-, Claude-Code-, WorkBuddy-, Gemini-CLI- oder anderen KI-Assistenten weiter, der auf demselben Computer Dateien prüfen und Befehle ausführen kann. Ein gewöhnlicher Web-Chat ohne Zugriff auf diesen Computer kann die Verbindung nicht herstellen. Die lokale KI diagnostiziert die installierte App, registriert nur einen vorhandenen, zulässigen und schreibgeschützten Protokollordner, überprüft die Datenquelle und aktualisiert den Bericht einmal.
+
+`SETUP_WITH_AI.md` enthält denselben vollständigen Prompt und Ablauf. Die KI darf nur die oben genannten schreibgeschützten Diagnose- und kontrollierten Konfigurationsbefehle ausführen. Sie darf nicht die gesamte Festplatte durchsuchen, Zugangsdaten oder Gesprächsinhalte lesen, einen KI-Client ändern, ein Aufzeichnungsformat erraten oder eine nicht unterstützte Quelle als verbunden melden. Die Konfigurationsdatei akzeptiert keine Befehle, Netzwerkadressen, Zugangsdaten oder beliebigen Parsing-Code.
 
 ```bash
 python3 -m venv .venv-desktop

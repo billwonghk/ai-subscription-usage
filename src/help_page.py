@@ -27,7 +27,7 @@ EN = {
     "title": "AI Subscription Usage: Configuration and User Guide", "intro": "This tool reads local AI usage records and calculates the last 30 days of API-equivalent value, subscription cost, and value multiple. No AI API is required. It refreshes once per local day at 03:00; if missed, it refreshes 15 minutes after the next launch unless today's refresh already succeeded. Clicking the menu-bar icon only opens the existing report.",
     "start": "First use", "start_body": "The app creates an initial report when none exists. After that, choose Refresh now only when you need an extra manual refresh. The app checks known local directories and reports missing records, permissions, or unsupported formats.",
     "sources": "Data sources", "sources_body": "ChatGPT uses internal Codex JSONL; Claude uses Claude JSONL; Gemini CLI uses chat JSON; MiniMax uses its local token accounting table. Antigravity, Grok, Kimi, GLM, and Alibaba Bailian are detected separately; unverified formats are never presented as usage data.",
-    "ai": "Configure with your local AI", "ai_body": "Give the English setup prompt below to a local AI. It may only run read-only diagnostics and validated configuration commands.",
+    "ai": "Configure with your local AI", "ai_body": "Default data folders are detected automatically. If usage is already shown, no setup is needed. If installed clients or records are not detected, copy the complete prompt below into a local AI that can inspect files and run commands on this computer. It will diagnose the packaged app, register only a supported existing read-only log directory, verify the result, and refresh the report.",
     "security": "Security boundary", "security_body": "OAuth, auth tokens, cookies, Keychain, and conversation content are never read.",
     "pricing": "Pricing and calculation", "pricing_body": "Regular input, cache reads, cache writes, and output use separate rates. Unknown named models remain unpriced. An explicit Auto record uses the lowest-priced model available in that provider's subscription on the record date: Codex uses GPT-5.4 mini through 2026-08-30 and GPT-5.6 Luna from 2026-08-31. OpenRouter prices refresh automatically; manually maintained official prices retain their stated source.",
     "trouble": "Troubleshooting", "trouble_body": "Run the doctor when data is missing. Each source reports an explicit status.",
@@ -82,10 +82,105 @@ TEXT = {
 TEXT["zh-CN"]["sources_body"] = "ChatGPT 使用内部 Codex JSONL；Claude 使用 Claude JSONL；Gemini CLI 使用聊天 JSON；MiniMax 使用本机 Token 计量表。Antigravity、Grok、Kimi、GLM 和阿里百炼单独检测；未经验证的格式不会显示为用量数据。"
 TEXT["zh-CN"]["intro"] = "本工具读取本机 AI 用量记录，计算最近 30 天 API 等价价值、订阅成本和价值倍数。计算不需要 AI API。报表按本机时间每天凌晨 3:00 后台更新一次；当天未成功更新时，应用启动 15 分钟后补更新一次。点击状态栏图标只打开已有报表。"
 TEXT["zh-CN"]["start_body"] = "首次安装尚无报表时会生成初始报表。之后仅在需要额外更新时选择“立即更新”。程序检查已知本机目录，并明确显示没有记录、权限不足或格式不支持。"
+TEXT["zh-CN"]["ai_body"] = "默认数据目录会自动识别；报表已经显示用量时不需要配置。安装后仍未识别到已有客户端或记录时，把下方完整提示词复制给能够在这台电脑上检查文件并运行命令的本机 AI。AI 会诊断已安装的应用，只登记白名单内现有的只读日志目录，验证结果并刷新报表。"
 TEXT["zh-CN"]["pricing_body"] = "普通输入、缓存读取、缓存写入和输出分别计价。未知的具名模型保持未计价。日志明确记录为 Auto 时，按记录日期选择该订阅当时可用的最低价模型估算：Codex 在 2026-08-30 及以前使用 GPT-5.4 mini，从 2026-08-31 起使用 GPT-5.6 Luna。OpenRouter 价格自动更新，人工维护的官方价格保留来源。"
 TEXT["zh-CN"]["deepseek_body"] = "缓存命中率和 DeepSeek 对比成本都使用最近 30 天真实用量。Auto 记录统一对应 DeepSeek V4 Flash；MiniMax M3 对应 V4 Pro，MiniMax M2.7 对应 V4 Flash；其他具名模型按实测能力对应 Flash 或 Pro。记录包含准确时间时，北京时间 9:00–12:00、14:00–18:00 按高峰价计算，其余按空闲价；记录没有准确时间时统一按空闲价。缓存命中和未命中使用真实记录，不使用猜测比例。"
 
-AI_PROMPT = "Read the configuration guide for AI Subscription Usage. Run the bundled application with --doctor --json. Do not read OAuth, auth tokens, cookies, Keychain, or conversation content. Do not modify any AI client. If a known source exists outside its default path, use --configure-source with an allowed provider, surface, format, and existing read-only directory. Finish with --verify-sources --json and report only statuses, formats, and file counts."
+TEXT["zh-TW"]["ai_body"] = "預設資料目錄會自動識別；報表已顯示用量時不需要設定。安裝後仍未識別到既有用戶端或記錄時，把下方完整提示詞複製給能在這部電腦上檢查檔案並執行命令的本機 AI。AI 會診斷已安裝的應用程式，只登記白名單內既有的唯讀記錄目錄、驗證結果並更新報表。"
+TEXT["ja"]["ai_body"] = "既定のデータフォルダは自動検出されます。レポートに使用量が表示されている場合、設定は不要です。インストール後も既存のクライアントや記録が検出されない場合は、下の完全なプロンプトを、このコンピューター上のファイル確認とコマンド実行ができるローカル AI に渡してください。AI はインストール済みアプリを診断し、許可された既存の読み取り専用ログフォルダだけを登録して、検証後にレポートを更新します。"
+TEXT["ko"]["ai_body"] = "기본 데이터 폴더는 자동으로 감지됩니다. 보고서에 사용량이 표시되면 설정할 필요가 없습니다. 설치 후에도 기존 클라이언트나 기록이 감지되지 않으면 아래의 전체 프롬프트를 이 컴퓨터에서 파일을 확인하고 명령을 실행할 수 있는 로컬 AI에 전달하세요. AI는 설치된 앱을 진단하고 허용 목록에 있는 기존 읽기 전용 로그 폴더만 등록한 뒤 결과를 검증하고 보고서를 새로 고칩니다."
+TEXT["fr"]["ai_body"] = "Les dossiers de données par défaut sont détectés automatiquement. Si le rapport affiche déjà l'utilisation, aucune configuration n'est requise. Si un client installé ou des enregistrements existants ne sont toujours pas détectés, transmettez l'invite complète ci-dessous à une IA locale capable d'inspecter les fichiers et d'exécuter des commandes sur cet ordinateur. Elle diagnostiquera l'application, enregistrera uniquement un dossier de journaux existant, autorisé et en lecture seule, vérifiera le résultat puis actualisera le rapport."
+TEXT["de"]["ai_body"] = "Standard-Datenordner werden automatisch erkannt. Wenn der Bericht bereits Nutzung anzeigt, ist keine Konfiguration erforderlich. Werden ein installierter Client oder vorhandene Aufzeichnungen weiterhin nicht erkannt, geben Sie den vollständigen Prompt unten an eine lokale KI weiter, die auf diesem Computer Dateien prüfen und Befehle ausführen kann. Sie diagnostiziert die installierte App, registriert nur einen vorhandenen, zulässigen und schreibgeschützten Protokollordner, überprüft das Ergebnis und aktualisiert den Bericht."
+TEXT["es"]["ai_body"] = "Las carpetas de datos predeterminadas se detectan automáticamente. Si el informe ya muestra uso, no es necesario configurar nada. Si después de instalar siguen sin detectarse un cliente o registros existentes, entrega la instrucción completa siguiente a una IA local que pueda revisar archivos y ejecutar comandos en este equipo. La IA diagnosticará la aplicación instalada, registrará únicamente una carpeta de registros existente, permitida y de solo lectura, verificará el resultado y actualizará el informe."
+
+AI_PROMPT = """Help me connect the installed AI Subscription Usage application to supported usage records on this computer.
+
+Work only with the installed AI Subscription Usage application and existing local usage-log directories. Do not install software. Do not read or display OAuth files, auth tokens, API keys, cookies, browser profiles, Keychain entries, credentials, prompts, replies, or conversation content. Do not modify any AI client or its configuration. Do not scan the whole disk.
+
+1. Locate the installed AI Subscription Usage executable. On macOS it is inside the application bundle at /path/to/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage. On Windows use the installed or portable AI Subscription Usage.exe.
+2. Run that executable with --doctor --json.
+3. Review only provider, surface, format, status, path, usage_support, and matching_files. A source with status ready is already connected and must not be changed.
+4. For each source that is not ready, check only its standard directory reported by --doctor and other existing directories that I explicitly identify. If a supported source exists outside its default path, register it with the same executable using --configure-source --provider PROVIDER --surface SURFACE --format FORMAT --path DIRECTORY. Use only an allowed provider, surface, and format returned by --doctor, and only an existing readable directory inside my user profile. Never guess a format or register a mixed-provider directory.
+5. Run --verify-sources --json. If at least one source is ready, run --refresh once.
+6. Report only each provider's status, surface, format, and matching file count. State clearly which sources are ready, which have no records, which need permission, and which formats are unsupported. Do not claim that a detected-only or unsupported source is connected, and do not estimate missing Token values."""
+
+AI_PROMPTS = {
+    "en": AI_PROMPT,
+    "zh-CN": """请帮助我把已安装的 AI Subscription Usage 应用与这台电脑上受支持的用量记录连接起来。
+
+只处理已安装的 AI Subscription Usage 应用和现有本机用量日志目录。不要安装软件。不要读取或显示 OAuth 文件、Auth Token、API Key、Cookie、浏览器配置、钥匙串、凭证、提示词、回复或对话正文。不要修改任何 AI 客户端或其配置。不要扫描整个硬盘。
+
+1. 找到已安装的 AI Subscription Usage 可执行文件。macOS 文件位于应用包内的 /path/to/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage；Windows 使用安装版或便携版的 AI Subscription Usage.exe。
+2. 使用该可执行文件运行 --doctor --json。
+3. 只检查 provider、surface、format、status、path、usage_support 和 matching_files。status 为 ready 的数据源已经接入，不要改动。
+4. 对于未就绪的数据源，只检查 --doctor 报告的标准目录和我明确指定的其他现有目录。受支持的数据源位于非默认目录时，使用同一个可执行文件运行 --configure-source --provider PROVIDER --surface SURFACE --format FORMAT --path DIRECTORY。只能使用 --doctor 返回的允许组合，并且目录必须是当前用户目录内现有且可读的目录。不得猜测格式，不得登记混合多个平台记录的目录。
+5. 运行 --verify-sources --json。至少一个数据源为 ready 时，只运行一次 --refresh。
+6. 只报告每个平台的状态、使用端、格式和匹配文件数。明确指出哪些已就绪、哪些没有记录、哪些需要权限、哪些格式不受支持。不得把 detected-only 或不支持的数据源说成已经接入，不得估算缺失的 Token。""",
+    "zh-TW": """請協助我把已安裝的 AI Subscription Usage 應用程式與這部電腦上支援的用量記錄連接起來。
+
+只處理已安裝的 AI Subscription Usage 應用程式和既有本機用量記錄目錄。不要安裝軟體。不要讀取或顯示 OAuth 檔案、Auth Token、API Key、Cookie、瀏覽器設定、鑰匙圈、憑證、提示詞、回覆或對話內容。不要修改任何 AI 用戶端或其設定。不要掃描整個硬碟。
+
+1. 找到已安裝的 AI Subscription Usage 執行檔。macOS 檔案位於應用程式套件內的 /path/to/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage；Windows 使用安裝版或可攜版的 AI Subscription Usage.exe。
+2. 使用該執行檔執行 --doctor --json。
+3. 只檢查 provider、surface、format、status、path、usage_support 和 matching_files。status 為 ready 的資料來源已經連接，不要更改。
+4. 對於未就緒的資料來源，只檢查 --doctor 回報的標準目錄和我明確指定的其他既有目錄。支援的資料來源位於非預設目錄時，使用同一個執行檔執行 --configure-source --provider PROVIDER --surface SURFACE --format FORMAT --path DIRECTORY。只能使用 --doctor 回傳的允許組合，而且目錄必須是目前使用者目錄內既有且可讀的目錄。不得猜測格式，不得登記混合多個平台記錄的目錄。
+5. 執行 --verify-sources --json。至少一個資料來源為 ready 時，只執行一次 --refresh。
+6. 只回報每個平台的狀態、使用端、格式和符合的檔案數。明確指出哪些已就緒、哪些沒有記錄、哪些需要權限、哪些格式不支援。不得把 detected-only 或不支援的資料來源說成已連接，不得估算缺少的 Token。""",
+    "ja": """インストール済みの AI Subscription Usage アプリを、このコンピューター上の対応する使用量記録に接続してください。
+
+インストール済みアプリと既存のローカル使用量ログフォルダだけを扱ってください。ソフトウェアをインストールせず、OAuth ファイル、Auth Token、API Key、Cookie、ブラウザープロファイル、キーチェーン、認証情報、プロンプト、返答、会話本文を読み取ったり表示したりしないでください。AI クライアントや設定を変更せず、ディスク全体をスキャンしないでください。
+
+1. 実行ファイルを特定します。macOS では /path/to/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage、Windows ではインストール版またはポータブル版の AI Subscription Usage.exe です。
+2. その実行ファイルで --doctor --json を実行します。
+3. provider、surface、format、status、path、usage_support、matching_files だけを確認します。status が ready のソースは接続済みなので変更しません。
+4. 未準備のソースについては、--doctor が示す標準フォルダと私が明示した既存フォルダだけを確認します。対応ソースが標準外にある場合、同じ実行ファイルで --configure-source --provider PROVIDER --surface SURFACE --format FORMAT --path DIRECTORY を実行します。--doctor が返す許可済みの組み合わせと、現在のユーザープロファイル内にある読み取り可能な既存フォルダだけを使用します。形式を推測せず、複数プロバイダーが混在するフォルダを登録しません。
+5. --verify-sources --json を実行します。1つ以上が ready なら --refresh を1回だけ実行します。
+6. 各プロバイダーの status、surface、format、matching_files だけを報告し、準備済み、記録なし、権限不足、未対応形式を明示します。detected-only または未対応のソースを接続済みとせず、不足 Token を推定しません。""",
+    "ko": """설치된 AI Subscription Usage 앱을 이 컴퓨터의 지원되는 사용량 기록에 연결해 주세요.
+
+설치된 앱과 기존 로컬 사용량 로그 폴더만 다루세요. 소프트웨어를 설치하지 말고 OAuth 파일, Auth Token, API Key, 쿠키, 브라우저 프로필, 키체인, 자격 증명, 프롬프트, 답변 또는 대화 본문을 읽거나 표시하지 마세요. AI 클라이언트나 설정을 수정하지 말고 디스크 전체를 검색하지 마세요.
+
+1. 실행 파일을 찾으세요. macOS에서는 /path/to/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage이고, Windows에서는 설치판 또는 포터블판의 AI Subscription Usage.exe입니다.
+2. 해당 실행 파일로 --doctor --json을 실행하세요.
+3. provider, surface, format, status, path, usage_support, matching_files만 확인하세요. status가 ready인 소스는 이미 연결되었으므로 변경하지 마세요.
+4. 준비되지 않은 소스는 --doctor가 보고한 기본 폴더와 내가 명시한 기존 폴더만 확인하세요. 지원 소스가 기본 경로 밖에 있으면 같은 실행 파일로 --configure-source --provider PROVIDER --surface SURFACE --format FORMAT --path DIRECTORY를 실행하세요. --doctor가 반환한 허용 조합과 현재 사용자 프로필 안의 기존 읽기 가능 폴더만 사용하세요. 형식을 추측하거나 여러 공급자의 기록이 섞인 폴더를 등록하지 마세요.
+5. --verify-sources --json을 실행하세요. 하나 이상의 소스가 ready이면 --refresh를 한 번만 실행하세요.
+6. 각 공급자의 status, surface, format, matching_files만 보고하고 준비됨, 기록 없음, 권한 필요, 지원되지 않는 형식을 명확히 구분하세요. detected-only 또는 지원되지 않는 소스를 연결되었다고 말하거나 누락된 Token을 추정하지 마세요.""",
+    "fr": """Aidez-moi à connecter l'application AI Subscription Usage installée aux enregistrements d'utilisation compatibles présents sur cet ordinateur.
+
+Travaillez uniquement avec l'application installée et les dossiers locaux de journaux existants. N'installez aucun logiciel. Ne lisez ni n'affichez les fichiers OAuth, Auth Token, API Key, cookies, profils de navigateur, Trousseau, identifiants, invites, réponses ou contenu des conversations. Ne modifiez aucun client d'IA ni sa configuration. Ne scannez pas tout le disque.
+
+1. Localisez l'exécutable. Sous macOS : /path/to/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage. Sous Windows : AI Subscription Usage.exe installé ou portable.
+2. Exécutez --doctor --json avec cet exécutable.
+3. Examinez uniquement provider, surface, format, status, path, usage_support et matching_files. Une source dont le status est ready est déjà connectée et ne doit pas être modifiée.
+4. Pour chaque source non prête, vérifiez uniquement le dossier standard indiqué par --doctor et les autres dossiers existants que je désigne explicitement. Si une source compatible se trouve ailleurs, exécutez --configure-source --provider PROVIDER --surface SURFACE --format FORMAT --path DIRECTORY avec le même exécutable. Utilisez seulement une combinaison autorisée renvoyée par --doctor et un dossier existant, lisible, situé dans mon profil utilisateur. Ne devinez pas le format et n'enregistrez pas un dossier mélangeant plusieurs fournisseurs.
+5. Exécutez --verify-sources --json. Si au moins une source est ready, exécutez --refresh une seule fois.
+6. Rapportez uniquement le status, la surface, le format et le nombre de fichiers correspondants de chaque fournisseur. Distinguez les sources prêtes, sans enregistrements, nécessitant une autorisation et non prises en charge. Ne présentez pas une source detected-only ou non prise en charge comme connectée et n'estimez pas les Token manquants.""",
+    "de": """Helfen Sie mir, die installierte Anwendung AI Subscription Usage mit unterstützten Nutzungsaufzeichnungen auf diesem Computer zu verbinden.
+
+Arbeiten Sie nur mit der installierten Anwendung und vorhandenen lokalen Nutzungsprotokollordnern. Installieren Sie keine Software. Lesen oder zeigen Sie keine OAuth-Dateien, Auth Token, API Key, Cookies, Browserprofile, Schlüsselbund-Einträge, Zugangsdaten, Prompts, Antworten oder Gesprächsinhalte. Ändern Sie keinen KI-Client und keine zugehörige Konfiguration. Durchsuchen Sie nicht die gesamte Festplatte.
+
+1. Suchen Sie die ausführbare Datei. Unter macOS: /path/to/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage. Unter Windows: die installierte oder portable AI Subscription Usage.exe.
+2. Führen Sie mit dieser Datei --doctor --json aus.
+3. Prüfen Sie nur provider, surface, format, status, path, usage_support und matching_files. Eine Quelle mit status ready ist bereits verbunden und darf nicht geändert werden.
+4. Prüfen Sie bei nicht bereiten Quellen nur den von --doctor gemeldeten Standardordner und weitere vorhandene Ordner, die ich ausdrücklich angebe. Liegt eine unterstützte Quelle außerhalb des Standardpfads, führen Sie mit derselben Datei --configure-source --provider PROVIDER --surface SURFACE --format FORMAT --path DIRECTORY aus. Verwenden Sie nur eine von --doctor zurückgegebene zulässige Kombination und einen vorhandenen lesbaren Ordner in meinem Benutzerprofil. Erraten Sie kein Format und registrieren Sie keinen Ordner mit Daten mehrerer Anbieter.
+5. Führen Sie --verify-sources --json aus. Ist mindestens eine Quelle ready, führen Sie --refresh genau einmal aus.
+6. Melden Sie nur status, surface, format und die Anzahl passender Dateien je Anbieter. Kennzeichnen Sie bereite Quellen, fehlende Aufzeichnungen, erforderliche Berechtigungen und nicht unterstützte Formate eindeutig. Bezeichnen Sie detected-only oder nicht unterstützte Quellen nicht als verbunden und schätzen Sie keine fehlenden Token.""",
+    "es": """Ayúdame a conectar la aplicación AI Subscription Usage instalada con los registros de uso compatibles de este equipo.
+
+Trabaja únicamente con la aplicación instalada y las carpetas locales de registros existentes. No instales software. No leas ni muestres archivos OAuth, Auth Token, API Key, cookies, perfiles del navegador, entradas del llavero, credenciales, instrucciones, respuestas o contenido de conversaciones. No modifiques ningún cliente de IA ni su configuración. No escanees todo el disco.
+
+1. Localiza el ejecutable. En macOS: /path/to/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage. En Windows: AI Subscription Usage.exe instalado o portable.
+2. Ejecuta --doctor --json con ese archivo.
+3. Revisa únicamente provider, surface, format, status, path, usage_support y matching_files. Una fuente con status ready ya está conectada y no debe cambiarse.
+4. Para cada fuente no preparada, revisa solo la carpeta predeterminada indicada por --doctor y las demás carpetas existentes que yo identifique expresamente. Si una fuente compatible está fuera de su ruta predeterminada, ejecuta --configure-source --provider PROVIDER --surface SURFACE --format FORMAT --path DIRECTORY con el mismo ejecutable. Usa solo una combinación permitida devuelta por --doctor y una carpeta existente y legible dentro de mi perfil de usuario. No adivines el formato ni registres una carpeta que mezcle varios proveedores.
+5. Ejecuta --verify-sources --json. Si al menos una fuente está ready, ejecuta --refresh una sola vez.
+6. Informa únicamente del status, surface, format y número de archivos coincidentes de cada proveedor. Distingue claramente las fuentes preparadas, sin registros, que requieren permiso y con formato no compatible. No presentes una fuente detected-only o no compatible como conectada ni estimes los Token ausentes.""",
+}
+
+
+def ai_prompt(language: str) -> str:
+    return AI_PROMPTS.get(language, AI_PROMPT)
 COMMANDS = "AI Subscription Usage --doctor --json\nAI Subscription Usage --configure-source --provider PROVIDER --surface SURFACE --format FORMAT --path DIRECTORY\nAI Subscription Usage --verify-sources --json\nAI Subscription Usage --refresh"
 
 
@@ -192,7 +287,7 @@ def render_help(
 
     style = ':root{color-scheme:dark;--bg:#080d18;--card:#101a2b;--ink:#ecf5ff;--sub:#a8b7ce;--line:#263854;--accent:#61a8ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}main{max-width:1100px;margin:auto;padding:38px 24px 72px}h1{font-size:30px;margin:0 0 10px;display:flex;align-items:center;gap:12px}.brand-logo{width:34px;height:34px;border-radius:8px;flex:none}h2{font-size:19px;margin:0 0 8px}h3{font-size:14px;margin:18px 0 8px;color:var(--ink)}p{color:var(--sub);line-height:1.7}section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:16px}pre{white-space:pre-wrap;background:#07101d;border:1px solid var(--line);padding:16px;border-radius:10px;color:#d8eaff}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-top:1px solid var(--line);text-align:left}th{color:var(--sub)}.prompt{user-select:all}.data-tabs{display:grid;grid-template-columns:repeat(var(--tab-count),minmax(0,1fr));gap:8px;margin:16px 0 12px;overflow-x:auto}.data-tab{min-width:88px;height:40px;border:1px solid var(--line);border-radius:9px;background:#07101d;color:var(--sub);font:inherit;font-weight:650;cursor:pointer}.data-tab.active{background:var(--accent);border-color:var(--accent);color:#07101d}.data-panel{display:none}.data-panel.active{display:block}'
     script = "document.querySelectorAll('.data-tab').forEach(b=>b.onclick=()=>{let s=b.dataset.set;document.querySelectorAll('.data-tab[data-set=\"'+s+'\"],.data-panel[data-set=\"'+s+'\"]').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelector('.data-panel[data-set=\"'+s+'\"][data-group=\"'+CSS.escape(b.dataset.group)+'\"]').classList.add('active')});let v=0;async function sync(){try{let r=await fetch('http://127.0.0.1:17653/state?ts='+Date.now(),{cache:'no-store'});if(!r.ok)return;let s=await r.json();if(v&&s.report_version!==v&&s.language!==document.documentElement.lang)location.replace('http://127.0.0.1:17653/help?ts='+Date.now());v=s.report_version}catch{}}setInterval(sync,1000);sync();"
-    return f'''<!doctype html><html lang="{html.escape(language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{FAVICON_TAG}<title>{html.escape(t['title'])}</title><style>{style}</style></head><body><main><h1>{LOGO_IMG}{html.escape(t['title'])}</h1><p>{html.escape(t['intro'])} · Ver {html.escape(app_version)}</p>{sections}{model_pricing_section}{deepseek_section}<section><h2>{html.escape(t['commands'])}</h2><pre>{html.escape(COMMANDS)}</pre></section><section><h2>{html.escape(t['detection'])}</h2><p>{html.escape(t['detection_note'])}</p><table><thead><tr><th>{html.escape(t['provider'])}</th><th>{html.escape(t['surface'])}</th><th>{html.escape(t['status'])}</th><th>{html.escape(t['files'])}</th></tr></thead><tbody>{rows}</tbody></table></section><section><h2>{html.escape(t['prompt'])}</h2><pre class="prompt">{html.escape(AI_PROMPT)}</pre></section></main><script>{script}</script></body></html>'''
+    return f'''<!doctype html><html lang="{html.escape(language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{FAVICON_TAG}<title>{html.escape(t['title'])}</title><style>{style}</style></head><body><main><h1>{LOGO_IMG}{html.escape(t['title'])}</h1><p>{html.escape(t['intro'])} · Ver {html.escape(app_version)}</p>{sections}{model_pricing_section}{deepseek_section}<section><h2>{html.escape(t['commands'])}</h2><pre>{html.escape(COMMANDS)}</pre></section><section><h2>{html.escape(t['detection'])}</h2><p>{html.escape(t['detection_note'])}</p><table><thead><tr><th>{html.escape(t['provider'])}</th><th>{html.escape(t['surface'])}</th><th>{html.escape(t['status'])}</th><th>{html.escape(t['files'])}</th></tr></thead><tbody>{rows}</tbody></table></section><section><h2>{html.escape(t['prompt'])}</h2><pre class="prompt">{html.escape(ai_prompt(language))}</pre></section></main><script>{script}</script></body></html>'''
 
 
 def write_help(

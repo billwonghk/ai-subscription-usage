@@ -102,7 +102,9 @@ AI\ Subscription\ Usage --configure-source --provider chatgpt --surface chatgpt-
 AI\ Subscription\ Usage --verify-sources --json
 ```
 
-`SETUP_WITH_AI.md` se puede entregar a tu propio asistente de IA local — ChatGPT, Claude Code, Gemini CLI u otro — que solo podrá invocar los comandos de diagnóstico de solo lectura y de configuración controlada indicados arriba. El archivo de configuración nunca acepta comandos, direcciones de red, credenciales ni código de análisis arbitrario.
+Las carpetas predeterminadas se detectan automáticamente. Si el informe ya muestra uso, no es necesario configurar nada. Si después de instalar siguen sin detectarse un cliente o registros existentes, abre «Configuración y guía» en la aplicación y entrega la instrucción completa a un Codex, Claude Code, WorkBuddy, Gemini CLI u otro asistente local que pueda revisar archivos y ejecutar comandos en el mismo equipo. Un chat web normal sin acceso a este equipo no puede realizar la conexión. La IA local diagnostica la aplicación instalada, registra únicamente una carpeta de registros existente, permitida y de solo lectura, verifica la fuente de datos y actualiza el informe una vez.
+
+`SETUP_WITH_AI.md` contiene la misma instrucción completa y el mismo procedimiento. La IA está limitada a los comandos anteriores de diagnóstico de solo lectura y configuración controlada. No debe escanear todo el disco, leer credenciales o contenido de conversaciones, modificar un cliente de IA, adivinar un formato de registro ni presentar una fuente no compatible como conectada. El archivo de configuración no acepta comandos, direcciones de red, credenciales ni código de análisis arbitrario.
 
 ```bash
 python3 -m venv .venv-desktop

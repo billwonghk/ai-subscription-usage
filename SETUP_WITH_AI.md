@@ -2,6 +2,27 @@
 
 This file is intended for ChatGPT, Claude Code, Gemini CLI, or another local AI that can run commands and inspect file names. The application itself does not require an AI model.
 
+The application first detects supported records in registered default folders automatically. If the report already shows usage, no connection step is required. Use this guide only when an installed client or existing records were not detected. The assistant must be able to inspect files and run the packaged application's local commands on the same computer; a web chat without local computer access cannot perform this setup.
+
+## Complete prompt to give your local AI
+
+Copy the following prompt into your own local Codex, Claude Code, WorkBuddy, Gemini CLI, or another assistant that can inspect files and run commands on this computer:
+
+```text
+Help me connect the installed AI Subscription Usage application to supported usage records on this computer.
+
+Work only with the installed AI Subscription Usage application and existing local usage-log directories. Do not install software. Do not read or display OAuth files, auth tokens, API keys, cookies, browser profiles, Keychain entries, credentials, prompts, replies, or conversation content. Do not modify any AI client or its configuration. Do not scan the whole disk.
+
+1. Locate the installed AI Subscription Usage executable. On macOS it is inside the application bundle at /path/to/AI Subscription Usage.app/Contents/MacOS/AI Subscription Usage. On Windows use the installed or portable AI Subscription Usage.exe.
+2. Run that executable with --doctor --json.
+3. Review only provider, surface, format, status, path, usage_support, and matching_files. A source with status ready is already connected and must not be changed.
+4. For each source that is not ready, check only its standard directory reported by --doctor and other existing directories that I explicitly identify. If a supported source exists outside its default path, register it with the same executable using --configure-source --provider PROVIDER --surface SURFACE --format FORMAT --path DIRECTORY. Use only an allowed provider, surface, and format returned by --doctor, and only an existing readable directory inside my user profile. Never guess a format or register a mixed-provider directory.
+5. Run --verify-sources --json. If at least one source is ready, run --refresh once.
+6. Report only each provider's status, surface, format, and matching file count. State clearly which sources are ready, which have no records, which need permission, and which formats are unsupported. Do not claim that a detected-only or unsupported source is connected, and do not estimate missing Token values.
+```
+
+The same prompt is available inside the application under **Configuration and User Guide**. The remaining sections below define the commands and safety limits the assistant must follow.
+
 Work only with the installed AI Subscription Usage application. Do not read OAuth files, auth tokens, cookies, browser profiles, Keychain, credentials, or conversation content. Do not modify ChatGPT, Claude, Gemini, Antigravity, Grok, or their configuration. Do not install software or execute downloaded scripts.
 
 Run the bundled application with `--doctor --json`. Review only the returned provider, surface, format, status, path, and matching file count. A `ready` source is already connected. `not_found` means the expected directory does not exist. `no_records` means the directory exists without supported records. `permission_required` means the person must grant access. `unsupported_format` means the client is installed or records exist, but the current application cannot safely calculate Token usage from that format.

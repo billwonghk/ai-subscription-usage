@@ -34,7 +34,7 @@ from i18n import SUPPORTED, load_messages, system_language
 from report_i18n import localize_html
 from report_view import should_open_new_report
 from updater import latest_release, update_pricing
-from help_page import AI_PROMPT, write_help
+from help_page import ai_prompt, write_help
 from settings_page import render_settings
 from source_discovery import configure_source, doctor_report, load_configured_sources
 from runtime_data import app_data_root, initialize_user_data, load_subscriptions, save_subscriptions
@@ -454,7 +454,8 @@ class DesktopApp:
                     return
                 if self.path.startswith("/settings"):
                     plans = ai_usage_report.subscription_plan_data(load_runtime_pricing())
-                    body = render_settings(app.settings["language"], app.settings, autostart.is_enabled(), autostart.is_supported(), APP_VERSION, provider_states(app.settings), AI_PROMPT, plans).encode()
+                    language = app.settings["language"]
+                    body = render_settings(language, app.settings, autostart.is_enabled(), autostart.is_supported(), APP_VERSION, provider_states(app.settings), ai_prompt(language), plans).encode()
                     self.send_response(200)
                     self._cors()
                     self.send_header("Content-Type", "text/html; charset=utf-8")

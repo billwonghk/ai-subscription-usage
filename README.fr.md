@@ -1,6 +1,6 @@
 # AI Subscription Usage
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | **Français** | [Deutsch](README.de.md) | [Español](README.es.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | **Français** | [Deutsch](README.de.md) | [Español](README.es.md)
 
 Application locale de barre de menus ou de zone de notification, sans compte, qui lit les journaux pris en charge de ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok et MiniMax, puis compare la valeur API des 30 derniers jours au prix réellement payé. Kimi, GLM et Alibaba Bailian sont détectés mais ne sont pas comptés avant validation de leur format local. Tout s'exécute sur la machine : aucune clé API IA, connexion de compte, donnée OAuth/Auth Token/Cookie ni service cloud.
 
@@ -17,7 +17,7 @@ Application locale de barre de menus ou de zone de notification, sans compte, qu
 - Lecture du compteur local MiniMax ; Kimi, GLM et Alibaba Bailian restent en détection seule tant que leur format n'est pas vérifié
 - Détection automatique des journaux d'utilisation locaux, avec une méthode sécurisée et sur liste blanche pour pointer vers un dossier non par défaut
 - Les tarifs des modèles pris en charge sont actualisés automatiquement environ une fois par semaine à partir des données tarifaires publiques de l'API d'[OpenRouter](https://openrouter.ai/) — aucune modification manuelle nécessaire
-- Sept langues : English, Français, Deutsch, Español, 简体中文, 日本語, 한국어
+- Huit langues : English, Français, Deutsch, Español, 简体中文, 繁體中文, 日本語, 한국어
 - Lancement au démarrage, actualisation automatique quotidienne à 03:00, rattrapage 15 minutes après le lancement si nécessaire, accès en un clic au dossier de données locales
 - Diagnostics anonymisés uniquement sur consentement explicite — jamais de contenu de conversation, de chemins de fichiers ni d'identifiants
 
@@ -25,7 +25,8 @@ Application locale de barre de menus ou de zone de notification, sans compte, qu
 **Obtenir l'application**
 
 Téléchargez la dernière version depuis la page [Releases](../../releases) :
-- **macOS** : `AI-Subscription-Usage-macOS.zip` — décompressez puis déplacez `AI Subscription Usage.app` dans le dossier Applications.
+- **macOS Apple Silicon (M1 et modèles ultérieurs)** : `AI-Subscription-Usage-macOS-Apple-Silicon.zip` — décompressez puis déplacez `AI Subscription Usage.app` dans le dossier Applications.
+- **macOS Intel** : `AI-Subscription-Usage-macOS-Intel.zip` — décompressez puis déplacez `AI Subscription Usage.app` dans le dossier Applications.
 - **Windows** : `AI-Subscription-Usage-Windows-Setup.exe` pour une installation classique (raccourci dans le menu Démarrer, désinstallation normale), ou `AI-Subscription-Usage-Windows-Portable.zip` si vous préférez simplement décompresser et lancer l'exécutable, sans rien écrire dans le registre ni dans Program Files.
 
 Chaque version est également accompagnée d'un fichier `SHA256SUMS.txt` permettant de vérifier votre téléchargement. La version Windows est compilée et testée automatiquement en intégration continue, mais n'a pas encore été testée manuellement sur une machine Windows physique — voir le tableau ci-dessous.

@@ -17,6 +17,7 @@ ZH = [
 ]
 
 TRANSLATIONS = {
+    "zh-TW": ["AI 訂閱用量報表", "最近", "天", "依電腦目前時區分日", "資料來自本機記錄", "由本機產生", "更新本機資料", "Token 總數", "輸入 Token", "輸出 Token", "API 等價價值", "有效訂閱成本", "價值倍數", "訂閱方案", "平台", "週期", "按月", "按年", "生效日期", "訂閱金額（USD）", "儲存方案", "報表", "每日 Token", "每日訂閱價值倍數", "平台詳細資料", "未設定", "未計算", "未計價 Token", "讀取檔案", "模型", "快取輸入", "未公開價格", "正在更新…", "更新完成，正在重新整理", "本機應用程式未執行", "無資料", "本機沒有可解析的記錄", "生效", "歷史方案", "API 價格資料來自 OpenRouter"],
     "en": ["AI Subscription Usage Report", "Last ", " days", "Grouped by the computer's local timezone", "Data from local logs", "Generated locally", "Refresh local data", "Total tokens", "Input tokens", "Output tokens", "API-equivalent value", "Effective subscription cost", "Value multiple", "Subscription plans", "Provider", "Billing", "Monthly", "Annual", "Effective date", "Subscription amount (USD)", "Save plan", "report", "Daily tokens", "Daily subscription value multiple", "Provider details", "Not set", "Not calculated", "Unpriced tokens", "Files read", "Model", "Cached input", "No public price", "Refreshing…", "Refresh complete; reloading", "Local app is not running", "No data", "No parsable local records", "effective", "plan history", "API pricing data from OpenRouter"],
     "ja": ["AIサブスクリプション使用量レポート", "直近", "日", "端末のタイムゾーンで日別集計", "ローカルログから取得", "ローカルで生成", "ローカルデータを更新", "総Token", "入力Token", "出力Token", "API相当額", "有効なサブスクリプション費用", "価値倍率", "サブスクリプションプラン", "サービス", "周期", "月額", "年額", "適用日", "料金（USD）", "プランを保存", "レポート", "日別Token", "日別サブスクリプション価値倍率", "サービス詳細", "未設定", "未計算", "未評価Token", "読込ファイル", "モデル", "キャッシュ入力", "公開価格なし", "更新中…", "更新完了、再読み込み中", "ローカルアプリが起動していません", "データなし", "解析可能なローカル記録なし", "適用", "プラン履歴", "API 価格データは OpenRouter より取得"],
     "ko": ["AI 구독 사용량 보고서", "최근", "일", "컴퓨터 현지 시간대로 일별 집계", "로컬 로그 데이터", "로컬에서 생성", "로컬 데이터 업데이트", "총 Token", "입력 Token", "출력 Token", "API 환산 가치", "유효 구독 비용", "가치 배수", "구독 요금제", "서비스", "주기", "월간", "연간", "적용일", "구독 금액(USD)", "요금제 저장", "보고서", "일별 Token", "일별 구독 가치 배수", "서비스 상세", "설정 안 됨", "계산 안 됨", "미가격 Token", "읽은 파일", "모델", "캐시 입력", "공개 가격 없음", "업데이트 중…", "업데이트 완료, 새로고침 중", "로컬 앱이 실행 중이 아닙니다", "데이터 없음", "분석 가능한 로컬 기록 없음", "적용", "요금제 기록", "API 가격 데이터 출처: OpenRouter"],
@@ -25,11 +26,20 @@ TRANSLATIONS = {
     "es": ["Informe de uso de suscripciones de IA", "Últimos ", " días", "Agrupado por la zona horaria local", "Datos de registros locales", "Generado localmente", "Actualizar datos locales", "Tokens totales", "Tokens de entrada", "Tokens de salida", "Valor equivalente de API", "Coste efectivo de suscripción", "Múltiplo de valor", "Planes de suscripción", "Proveedor", "Periodo", "Mensual", "Anual", "Fecha de vigencia", "Importe (USD)", "Guardar plan", "informe", "Tokens diarios", "Múltiplo de valor diario", "Detalles por proveedor", "Sin configurar", "Sin calcular", "Tokens sin precio", "Archivos leídos", "Modelo", "Entrada en caché", "Sin precio público", "Actualizando…", "Actualización completa; recargando", "La aplicación local no está activa", "Sin datos", "No hay registros locales analizables", "vigente", "historial de planes", "Datos de precios de la API de OpenRouter"],
 }
 
-DAYS_FORMAT = {"en": "Last {days} days", "ja": "直近{days}日", "ko": "최근 {days}일", "fr": "Derniers {days} jours", "de": "Letzte {days} Tage", "es": "Últimos {days} días"}
-GENERATED_FORMAT = {"en": "Generated locally · {time}", "ja": "ローカルで生成 · {time}", "ko": "로컬에서 생성 · {time}", "fr": "Généré localement · {time}", "de": "Lokal erzeugt · {time}", "es": "Generado localmente · {time}"}
-HELP_LINKS = {"en": "Configuration and user guide", "ja": "設定・使用ガイド", "ko": "구성 및 사용 안내", "fr": "Configuration et guide", "de": "Konfiguration und Anleitung", "es": "Configuración y guía"}
+DAYS_FORMAT = {"zh-TW": "最近 {days} 天", "en": "Last {days} days", "ja": "直近{days}日", "ko": "최근 {days}일", "fr": "Derniers {days} jours", "de": "Letzte {days} Tage", "es": "Últimos {days} días"}
+GENERATED_FORMAT = {"zh-TW": "由本機產生 · {time}", "en": "Generated locally · {time}", "ja": "ローカルで生成 · {time}", "ko": "로컬에서 생성 · {time}", "fr": "Généré localement · {time}", "de": "Lokal erzeugt · {time}", "es": "Generado localmente · {time}"}
+HELP_LINKS = {"zh-TW": "設定及使用說明", "en": "Configuration and user guide", "ja": "設定・使用ガイド", "ko": "구성 및 사용 안내", "fr": "Configuration et guide", "de": "Konfiguration und Anleitung", "es": "Configuración y guía"}
 
 EXTRA_TRANSLATIONS = {
+    "zh-TW": {
+        "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "每個平台儲存獨立的方案記錄。月訂閱按 30 天分攤，年訂閱按 360 天分攤；方案生效日前不計算訂閱成本。",
+        "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "依這段期間每天實際生效的訂閱價格計算；訂閱價格若曾在期間內變動，這裡會顯示新舊價格混合後的結果。",
+        "各平台当天输入、输出和缓存口径合并后的 Token。": "各平台當天輸入、輸出與快取口徑合併後的 Token。",
+        "当天 API 等价价值 ÷ 当天订阅日成本。没有公开模型价格或没有生效订阅计划时，该平台当天不计算倍数。": "當天 API 等價價值 ÷ 當天訂閱日成本。沒有公開模型價格或沒有生效訂閱方案時，該平台當天不計算倍數。",
+        "输入订阅金额": "輸入訂閱金額", "不计算订阅成本与倍数": "不計算訂閱成本與倍數", "无生效计划": "無生效方案", "模型未计价": "模型未計價", "日成本": "日成本", "（无数据）": "（無資料）", "（估算）": "（估算）", "（今日）": "（今天）", "更新完成，正在打开本机报表": "更新完成，正在開啟本機報表", "每个平台": "每個平台", "当天": "當天",
+        "各平台每日 Token 折线图": "各平台每日 Token 折線圖", "各平台每日订阅价值倍数折线图": "各平台每日訂閱價值倍數折線圖", "同区间价值倍数": "同區間價值倍數", "<th>输入</th>": "<th>輸入</th>", "<th>输出</th>": "<th>輸出</th>", "'年'": "'年'", "'月'": "'月'", " 条": " 筆",
+        "缓存命中率": "快取命中率", "对应 DeepSeek 成本": "對應 DeepSeek 成本", "对应 DeepSeek": "對應 DeepSeek", "对应 DeepSeek V4 Pro": "對應 DeepSeek V4 Pro", "对应 DeepSeek V4 Flash": "對應 DeepSeek V4 Flash", "以 DeepSeek 定价核算的成本，缓存命中率已计入": "以 DeepSeek 定價核算的成本，已計入快取命中率", "各平台已计价模型的 DeepSeek 参考成本合计。": "各平台已計價模型的 DeepSeek 參考成本合計。", "无法确认具体模型的记录保留 Token，但不参与价格计算；所示金额为已确认模型的保守估算。": "無法確認具體模型的記錄會保留 Token，但不參與價格計算；顯示金額為已確認模型的保守估算。",
+    },
     "en": {
         "每个平台保存独立的计划历史。月订阅按 30 天分摊，年订阅按 360 天分摊；计划生效日前不计算订阅成本。": "Each provider keeps its own plan history. Monthly plans are allocated over 30 days and annual plans over 360 days; subscription cost is excluded before the effective date.",
         "按这段时间里每天实际生效的订阅价格计算；订阅价格中途变动过的话，这里会是新旧价格混合后的结果。": "Calculated using whichever subscription price was in effect each day in this period; if your subscription price changed partway through, this blends the old and new rates.",
@@ -142,6 +152,20 @@ def localize_html(page: str, language: str) -> str:
         for source, target in sorted(additions.items(), key=lambda pair: len(pair[0]), reverse=True):
             translated = translated.replace(source, target)
         translated = translated.replace("esc(m.model)", "esc(m.model==='未记录模型'?'Model not recorded':m.model)")
+    elif language == "zh-TW":
+        additions = {
+            "显示货币": "顯示幣別", "原币种": "原幣別", "无用量记录": "無用量記錄",
+            "（仅已计价部分）": "（僅已計價部分）", "汇率不可用": "匯率無法使用",
+            "Auto 无法确认实际路由，按当前订阅最低价模型": "Auto 無法確認實際路由，依目前訂閱最低價模型估算",
+            "本机应用未运行，订阅计划没有保存": "本機應用程式未執行，訂閱方案尚未儲存",
+            "订阅金额（${currency}）": "訂閱金額（${currency}）",
+            "汇率来源：ECB · 最新参考日期": "匯率來源：ECB · 最新參考日期",
+            "历史金额按每日参考汇率换算": "歷史金額依每日參考匯率換算",
+            "汇率尚未取得，当前只能显示 USD": "尚未取得匯率，目前只能顯示 USD", " 估算": " 估算",
+        }
+        for source, target in sorted(additions.items(), key=lambda pair: len(pair[0]), reverse=True):
+            translated = translated.replace(source, target)
+        translated = translated.replace("esc(m.model)", "esc(m.model==='未记录模型'?'未記錄模型':m.model)")
     translated = translated.replace("配置及使用说明", HELP_LINKS[language])
     for source, target in sorted(EXTRA_TRANSLATIONS[language].items(), key=lambda pair: len(pair[0]), reverse=True):
         translated = translated.replace(source, target)
@@ -153,9 +177,9 @@ def localize_html(page: str, language: str) -> str:
             continue
         translated = translated.replace(source, target)
     if payload is not None:
-        if language == "en":
+        if language in {"en", "zh-TW"}:
             for provider in payload.get("providers", []):
                 if provider.get("label") == "阿里百炼":
-                    provider["label"] = "Alibaba Bailian"
+                    provider["label"] = "Alibaba Bailian" if language == "en" else "阿里百鍊"
         translated = translated.replace("__REPORT_PAYLOAD__", json.dumps(payload, ensure_ascii=False).replace("</", "<\\/"))
     return translated

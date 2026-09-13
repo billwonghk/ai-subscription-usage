@@ -1,5 +1,6 @@
 build/
 dist/
+release-assets/
 outputs/
 output/
 desktop-app.log

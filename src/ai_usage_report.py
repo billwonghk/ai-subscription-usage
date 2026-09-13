@@ -966,7 +966,7 @@ def main() -> None:
     parser.add_argument("--gemini-sessions", type=Path, default=LOCAL_GEMINI_SESSIONS, help="Gemini CLI session directory.")
     parser.add_argument("--grok-sessions", type=Path, default=LOCAL_GROK_SESSIONS, help="Grok Build session directory.")
     parser.add_argument("--pricing", type=Path, default=DEFAULT_PRICING, help="Verified API price table JSON.")
-    parser.add_argument("--language", choices=["zh-CN", "en", "ja", "ko", "fr", "de", "es"], default="zh-CN", help="Report language.")
+    parser.add_argument("--language", choices=["zh-CN", "zh-TW", "en", "ja", "ko", "fr", "de", "es"], default="zh-CN", help="Report language.")
     args = parser.parse_args()
     if args.days < 1:
         raise SystemExit("--days 必须大于 0")

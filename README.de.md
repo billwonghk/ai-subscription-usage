@@ -1,6 +1,6 @@
 # AI Subscription Usage
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | **Deutsch** | [Español](README.es.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | **Deutsch** | [Español](README.es.md)
 
 Eine lokale Menüleisten- bzw. System-Tray-App ohne Konto, die unterstützte lokale Nutzungsprotokolle von ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok und MiniMax liest und den API-Gegenwert der letzten 30 Tage mit den tatsächlichen Abokosten vergleicht. Kimi, GLM und Alibaba Bailian werden erkannt, aber erst nach Prüfung ihres lokalen Formats gezählt. Alles läuft auf dem eigenen Rechner, ohne KI-API-Schlüssel, Kontoanmeldung, OAuth/Auth Token/Cookie-Zugriff oder Cloud-Dienst.
 
@@ -17,7 +17,7 @@ Eine lokale Menüleisten- bzw. System-Tray-App ohne Konto, die unterstützte lok
 - Unterstützung der lokalen MiniMax-Token-Tabelle; Kimi, GLM und Alibaba Bailian bleiben bis zur Formatprüfung reine Erkennung
 - Automatische Erkennung lokaler Nutzungsprotokolle, mit einer sicheren Whitelist-Methode für nicht standardmäßige Ordner
 - Preise für unterstützte Modelle werden automatisch etwa einmal pro Woche aus den öffentlichen API-Preisdaten von [OpenRouter](https://openrouter.ai/) aktualisiert — keine manuelle Pflege nötig
-- Sieben Sprachen: English, Français, Deutsch, Español, 简体中文, 日本語, 한국어
+- Acht Sprachen: English, Français, Deutsch, Español, 简体中文, 繁體中文, 日本語, 한국어
 - Start bei Anmeldung, tägliche automatische Aktualisierung um 03:00 Uhr, Nachholung 15 Minuten nach dem Start falls erforderlich, Ein-Klick-Zugriff auf den lokalen Datenordner
 - Nur optionale, anonymisierte Diagnosedaten — niemals Gesprächsinhalte, Dateipfade oder Zugangsdaten
 
@@ -25,7 +25,8 @@ Eine lokale Menüleisten- bzw. System-Tray-App ohne Konto, die unterstützte lok
 **Installation**
 
 Laden Sie die aktuelle Version von der [Releases](../../releases)-Seite herunter:
-- **macOS**: `AI-Subscription-Usage-macOS.zip` — entpacken und `AI Subscription Usage.app` in den Programme-Ordner verschieben.
+- **macOS Apple Silicon (M1 und neuer)**: `AI-Subscription-Usage-macOS-Apple-Silicon.zip` — entpacken und `AI Subscription Usage.app` in den Programme-Ordner verschieben.
+- **macOS Intel**: `AI-Subscription-Usage-macOS-Intel.zip` — entpacken und `AI Subscription Usage.app` in den Programme-Ordner verschieben.
 - **Windows**: `AI-Subscription-Usage-Windows-Setup.exe` für eine normale Installation (Startmenü-Verknüpfung, ordentliche Deinstallation) oder `AI-Subscription-Usage-Windows-Portable.zip`, wenn Sie lieber nur entpacken und die .exe direkt ausführen möchten, ohne dass etwas in die Registry oder nach Program Files geschrieben wird.
 
 Jede Version enthält außerdem eine `SHA256SUMS.txt` zur Überprüfung des Downloads. Der Windows-Build wird in der CI kompiliert und automatisch getestet, wurde aber noch nicht auf einem echten Windows-Rechner von Hand getestet — siehe Tabelle unten.

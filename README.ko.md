@@ -1,6 +1,6 @@
 # AI Subscription Usage
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | **한국어** | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | **한국어** | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
 ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok, MiniMax의 지원되는 로컬 사용 기록을 읽어 최근 30일간 API 환산 가치와 실제 구독 비용을 비교하는 계정 등록 불필요 메뉴바 / 시스템 트레이 앱입니다. Kimi, GLM, Alibaba Bailian은 설치와 로컬 기록을 감지하지만 형식 검증 전에는 사용량에 포함하지 않습니다. 모든 처리는 사용자 컴퓨터에서만 이루어지며 AI API 키, 계정 로그인, OAuth/Auth Token/Cookie 접근이나 클라우드 서비스가 필요하지 않습니다.
 
@@ -17,7 +17,7 @@ ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok, MiniMax의 지원되는 
 - MiniMax 로컬 토큰 계량표 지원. Kimi, GLM, Alibaba Bailian은 형식 검증 전까지 감지만 수행
 - 로컬 사용 기록 자동 탐지, 기본 위치가 아닌 폴더를 지정할 수 있는 안전한 화이트리스트 방식도 지원
 - 지원되는 모델의 가격은 [OpenRouter](https://openrouter.ai/)의 공개 API 가격 데이터에서 약 주 1회 자동 업데이트 — 수동 편집 불필요
-- 7개 언어 지원: English, Français, Deutsch, Español, 简体中文, 日本語, 한국어
+- 8개 언어 지원: English, Français, Deutsch, Español, 简体中文, 繁體中文, 日本語, 한국어
 - 로그인 시 자동 실행, 매일 오전 3시 자동 업데이트, 필요한 경우 실행 15분 후 보완 업데이트, 로컬 데이터 폴더로의 원클릭 접근
 - 옵트인 방식의 익명 진단만 수집 — 대화 내용, 파일 경로, 자격 증명은 절대 포함되지 않음
 
@@ -25,7 +25,8 @@ ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok, MiniMax의 지원되는 
 **받는 방법**
 
 [Releases](../../releases) 페이지에서 최신 빌드를 다운로드하세요:
-- **macOS**: `AI-Subscription-Usage-macOS.zip` — 압축을 풀고 `AI Subscription Usage.app`을 Applications 폴더로 옮기세요.
+- **macOS Apple Silicon(M1 이상)**: `AI-Subscription-Usage-macOS-Apple-Silicon.zip` — 압축을 풀고 `AI Subscription Usage.app`을 Applications 폴더로 옮기세요.
+- **macOS Intel**: `AI-Subscription-Usage-macOS-Intel.zip` — 압축을 풀고 `AI Subscription Usage.app`을 Applications 폴더로 옮기세요.
 - **Windows**: 일반 설치(시작 메뉴 바로가기, 정상적인 제거 기능)를 원하면 `AI-Subscription-Usage-Windows-Setup.exe`를, 레지스트리나 Program Files에 아무것도 기록하고 싶지 않다면 압축만 풀고 바로 실행할 수 있는 `AI-Subscription-Usage-Windows-Portable.zip`을 사용하세요.
 
 모든 릴리스에는 다운로드 검증용 `SHA256SUMS.txt`도 함께 제공됩니다. Windows 빌드는 CI에서 컴파일 및 자체 테스트를 거쳤지만, 아직 실제 Windows 기기에서 직접 테스트되지는 않았습니다 — 아래 표를 참고하세요.

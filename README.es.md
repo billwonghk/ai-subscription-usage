@@ -1,6 +1,6 @@
 # AI Subscription Usage
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | **Español**
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | **Español**
 
 Aplicación local de barra de menú o bandeja del sistema, sin cuenta, que lee los registros compatibles de ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok y MiniMax, y compara el valor API de los últimos 30 días con el coste real de cada suscripción. Kimi, GLM y Alibaba Bailian se detectan, pero no se contabilizan hasta verificar su formato local. Todo se ejecuta en el equipo, sin clave API de IA, inicio de sesión, acceso a OAuth/Auth Token/Cookies ni servicio en la nube.
 
@@ -17,7 +17,7 @@ Aplicación local de barra de menú o bandeja del sistema, sin cuenta, que lee l
 - Compatibilidad con la tabla local de tokens de MiniMax; Kimi, GLM y Alibaba Bailian permanecen en modo de detección hasta verificar su formato
 - Detección automática de los registros de uso locales, con un método seguro y de lista blanca para señalar una carpeta que no sea la predeterminada
 - Los precios de los modelos compatibles se actualizan automáticamente alrededor de una vez por semana con los datos públicos de precios de la API de [OpenRouter](https://openrouter.ai/) — sin necesidad de edición manual
-- Siete idiomas: English, Français, Deutsch, Español, 简体中文, 日本語, 한국어
+- Ocho idiomas: English, Français, Deutsch, Español, 简体中文, 繁體中文, 日本語, 한국어
 - Inicio automático al iniciar sesión, actualización automática diaria a las 03:00, recuperación 15 minutos después del inicio cuando corresponda y acceso con un clic a la carpeta de datos locales
 - Diagnósticos anonimizados solo mediante consentimiento explícito — nunca contenido de conversaciones, rutas de archivos ni credenciales
 
@@ -25,7 +25,8 @@ Aplicación local de barra de menú o bandeja del sistema, sin cuenta, que lee l
 **Cómo obtenerlo**
 
 Descarga la última versión desde la página de [Releases](../../releases):
-- **macOS**: `AI-Subscription-Usage-macOS.zip` — descomprímelo y mueve `AI Subscription Usage.app` a la carpeta Aplicaciones.
+- **macOS Apple Silicon (M1 y posteriores)**: `AI-Subscription-Usage-macOS-Apple-Silicon.zip` — descomprímelo y mueve `AI Subscription Usage.app` a la carpeta Aplicaciones.
+- **macOS Intel**: `AI-Subscription-Usage-macOS-Intel.zip` — descomprímelo y mueve `AI Subscription Usage.app` a la carpeta Aplicaciones.
 - **Windows**: `AI-Subscription-Usage-Windows-Setup.exe` para una instalación normal (acceso directo en el menú Inicio, desinstalación adecuada), o `AI-Subscription-Usage-Windows-Portable.zip` si prefieres simplemente descomprimir y ejecutar el .exe directamente, sin que se escriba nada en el registro ni en Program Files.
 
 Cada versión incluye también un archivo `SHA256SUMS.txt` para verificar tu descarga. La versión de Windows se compila y se prueba automáticamente en la integración continua, pero todavía no se ha probado manualmente en un equipo Windows físico — consulta la tabla más abajo.

@@ -17,9 +17,22 @@ from report_i18n import localize_html
 from settings_page import render_settings
 from help_page import render_help
 from updater import validate_pricing
+import i18n
 
 
 class BilingualTests(unittest.TestCase):
+    def test_system_chinese_locale_selects_correct_script(self):
+        for system_locale, expected in (("zh_CN", "zh-CN"), ("zh_SG", "zh-CN"), ("zh_TW", "zh-TW"), ("zh_HK", "zh-TW"), ("zh_Hant", "zh-TW")):
+            with self.subTest(system_locale=system_locale), patch("i18n.locale.getlocale", return_value=(system_locale, "UTF-8")):
+                self.assertEqual(i18n.system_language(), expected)
+
+    def test_traditional_shell_locale_has_complete_keys(self):
+        simplified = i18n.load_messages("zh-CN")
+        traditional = i18n.load_messages("zh-TW")
+        self.assertEqual(set(traditional), set(simplified))
+        self.assertEqual(traditional["open_report"], "開啟報表")
+        self.assertEqual(traditional["help"], "設定及使用說明")
+
     def test_switch_saves_without_scanning_or_waiting_for_refresh(self):
         # Exercise the production method without loading a native tray backend.
         source = Path(__file__).resolve().parents[1] / 'src/desktop_app.py'
@@ -28,11 +41,11 @@ class BilingualTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             base, target = Path(directory) / 'base.html', Path(directory) / 'report.html'
             base.write_text('<html lang="zh-CN">订阅 AI 用量报表</html>')
-            scope = {'SUPPORTED': {'en', 'zh-CN'}, 'save_settings': Mock(), 'load_messages': lambda lang: {'language': lang},
+            scope = {'SUPPORTED': {'en', 'zh-CN', 'zh-TW'}, 'save_settings': Mock(), 'load_messages': lambda lang: {'language': lang},
                      'BASE_REPORT_PATH': base, 'REPORT_PATH': target, 'localize_html': localize_html, 'write_help_page': Mock()}
             exec(compile(ast.Module(body=[method], type_ignores=[]), str(source), 'exec'), scope)
             app = SimpleNamespace(settings={}, _presentation_lock=threading.RLock(), icon=None, refresh=Mock())
-            for language in ('en', 'zh-CN'):
+            for language in ('en', 'zh-CN', 'zh-TW'):
                 scope['set_language'](app, language)
                 self.assertIn('lang="' + language + '"', target.read_text())
                 self.assertEqual(app.settings['language'], language)
@@ -56,6 +69,11 @@ class BilingualTests(unittest.TestCase):
         self.assertEqual(actual['providers'][0]['label'], 'Alibaba Bailian')
         actual['providers'][0]['label'] = '阿里百炼'
         self.assertEqual(actual, payload)
+        traditional = localize_html('const DATA=' + json.dumps(payload, ensure_ascii=False) + ';const $=x;', 'zh-TW')
+        traditional_payload = json.loads(re.search(r'const DATA=(.*?);const \$=', traditional).group(1))
+        self.assertEqual(traditional_payload['providers'][0]['label'], '阿里百鍊')
+        self.assertEqual(traditional_payload['providers'][0]['id'], '百炼')
+        self.assertEqual(traditional_payload['plans'][0]['provider'], '阿里百炼')
 
     def test_settings_switches_and_preserves_delete_key(self):
         plan = {'provider': '阿里百炼', 'start_date': '2026-09-01', 'amount': 40, 'currency': 'CNY', 'cycle': 'month'}
@@ -63,10 +81,15 @@ class BilingualTests(unittest.TestCase):
         self.assertIn('aria-pressed="true" data-action="set_language" data-value="en"', en)
         self.assertIn('<strong>Alibaba Bailian</strong>', en)
         self.assertIn('data-provider="阿里百炼"', en)
+        traditional = render_settings('zh-TW', {}, False, False, subscription_plans=[plan])
+        self.assertIn('繁體中文', traditional)
+        self.assertIn('简体中文', traditional)
+        self.assertIn('<strong>阿里百鍊</strong>', traditional)
+        self.assertIn('data-provider="阿里百炼"', traditional)
 
     @unittest.skipUnless(shutil.which('node'), 'Node is required for JavaScript syntax checks')
     def test_rendered_scripts_compile_in_both_languages(self):
-        for language in ('zh-CN', 'en'):
+        for language in ('zh-CN', 'zh-TW', 'en'):
             with patch('help_page.doctor_report', return_value={'discovered_sources': []}):
                 pages = [localize_html(render_dashboard([], 1, {}, {'models': {}, 'subscriptions': {}}, enabled_providers=[]), language),
                          render_settings(language, {}, False, False),

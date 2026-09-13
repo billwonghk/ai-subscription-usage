@@ -10,9 +10,10 @@ from pathlib import Path
 
 RESOURCE_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
 LOCALE_ROOT = RESOURCE_ROOT / "locales"
-SUPPORTED = {"zh-CN", "en", "ja", "ko", "fr", "de", "es"}
+SUPPORTED = {"zh-CN", "zh-TW", "en", "ja", "ko", "fr", "de", "es"}
 MODEL_PRICING_LABELS = {
     "zh-CN": "更新模型价格",
+    "zh-TW": "更新模型價格",
     "en": "Update model pricing",
     "ja": "モデル価格を更新",
     "ko": "모델 가격 업데이트",
@@ -21,7 +22,7 @@ MODEL_PRICING_LABELS = {
     "es": "Actualizar precios de modelos",
 }
 HELP_LABELS = {
-    "zh-CN": "配置及使用说明", "en": "Configuration and user guide", "ja": "設定・使用ガイド",
+    "zh-CN": "配置及使用说明", "zh-TW": "設定及使用說明", "en": "Configuration and user guide", "ja": "設定・使用ガイド",
     "ko": "구성 및 사용 안내", "fr": "Configuration et guide", "de": "Konfiguration und Anleitung",
     "es": "Configuración y guía",
 }
@@ -29,7 +30,10 @@ HELP_LABELS = {
 
 def system_language() -> str:
     language = (locale.getlocale()[0] or "en").replace("_", "-")
-    if language.lower().startswith("zh"):
+    normalized = language.lower()
+    if normalized.startswith(("zh-tw", "zh-hk", "zh-mo", "zh-hant")):
+        return "zh-TW"
+    if normalized.startswith("zh"):
         return "zh-CN"
     short = language.split("-")[0]
     return short if short in SUPPORTED else "en"

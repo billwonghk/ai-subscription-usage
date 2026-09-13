@@ -12,11 +12,11 @@
 
 报表采用缓存优先：点击状态栏打开已有报表，不先等待扫描。应用运行时按本机时间凌晨 3:00 调度后台刷新；当天尚未成功更新时，启动 15 分钟后补更新。手动刷新保留。新增单实例控制，重复启动通知已有应用，退出取消定时任务并关闭本机监听。Windows 安装器关闭运行中的应用后替换程序。
 
-设置中可即时切换中文与英文，同步报表、说明及状态栏菜单，不修改用量或订阅数据。补齐货币、汇率、保存失败、Auto 估算和部分计价的英文提示。修正无效设置误报成功、请求长度校验、价格非有限数与重叠日期校验，以及旧 Release 被错误提示为新版本的问题。
+设置中可即时切换八种语言：简体中文、繁體中文、English、日本語、한국어、Français、Deutsch 和 Español，并同步报表、说明及状态栏菜单，不修改用量或订阅数据。补齐货币、汇率、保存失败、Auto 估算和部分计价提示。修正无效设置误报成功、请求长度校验、价格非有限数与重叠日期校验，以及旧 Release 被错误提示为新版本的问题。
 
 发布包不携带个人配置、密码、API Key、私人服务地址、诊断日志、订阅记录或用量报表。旧版用量截图不再包含在本版本源码中。安装包和待发布源码均执行隐私规则检查；已有 Git 历史不在本次重写范围内。
 
-升级时下载对应平台安装包。Windows 支持安装器或便携版；应用内直接下载安装尚未实现。macOS 因没有开通 Apple Developer Program 付费会员，不使用 Developer ID 签名和 Apple 公证，需要手动下载并替换应用。程序文件与用户数据分离，更新保留现有配置和订阅记录。语音、实时音频和 Dictation 的独立消耗不纳入本版本统计。
+升级时按系统和处理器下载独立包：Apple Silicon Mac 使用 `AI-Subscription-Usage-macOS-Apple-Silicon.zip`，Intel Mac 使用 `AI-Subscription-Usage-macOS-Intel.zip`；Windows 可选择 `AI-Subscription-Usage-Windows-Setup.exe` 安装版或 `AI-Subscription-Usage-Windows-Portable.zip` 绿色版。CI 会分别在 arm64 和 x86_64 macOS Runner 上构建，并检查应用主二进制的实际架构；Intel 版本尚未在 Intel Mac 真机手动测试。应用内直接下载安装尚未实现。macOS 因没有开通 Apple Developer Program 付费会员，不使用 Developer ID 签名和 Apple 公证，需要手动下载并替换应用。程序文件与用户数据分离，更新保留现有配置和订阅记录。语音、实时音频和 Dictation 的独立消耗不纳入本版本统计。
 
 ## English: changes since v0.4.1
 
@@ -30,8 +30,8 @@ Explicit Auto records use the configured lowest-priced subscription model applic
 
 Opening the tray report uses the cached page without waiting for a scan. Daily background refresh is scheduled for 03:00 local time, with a 15-minute post-launch catch-up when no successful refresh has occurred that day. Manual refresh remains available. Single-instance ownership prevents duplicate app listeners; quitting cancels timers and closes the local listener. The Windows installer closes the running application before replacement.
 
-Chinese and English switch immediately in Settings, the report, the guide and the tray menu without changing usage or subscription data. Added missing currency, exchange-rate, error and estimation translations. Fixed false-success settings responses, invalid request lengths, nonfinite and overlapping pricing records, and update checks that previously offered older releases.
+Eight languages switch immediately in Settings, the report, the guide and the tray menu without changing usage or subscription data: Simplified Chinese, Traditional Chinese, English, Japanese, Korean, French, German and Spanish. Added missing currency, exchange-rate, error and estimation translations. Fixed false-success settings responses, invalid request lengths, nonfinite and overlapping pricing records, and update checks that previously offered older releases.
 
 Public artifacts exclude personal configuration, credentials, private service addresses, diagnostics, subscription records and usage reports. Historical usage screenshots are removed from the current source tree. Source and packaged-code privacy checks run before release; existing Git history is not rewritten by this release.
 
-Download the installer or portable application to upgrade; in-app installer downloading is not implemented. macOS uses manual download and replacement because the project has no paid Apple Developer Program membership, Developer ID signing or Apple notarization. User data is kept separate from application files. Independent voice, realtime-audio and dictation usage is not included.
+Download the independent package for the operating system and processor: `AI-Subscription-Usage-macOS-Apple-Silicon.zip` for Apple Silicon Macs, `AI-Subscription-Usage-macOS-Intel.zip` for Intel Macs, `AI-Subscription-Usage-Windows-Setup.exe` for a normal Windows installation, or `AI-Subscription-Usage-Windows-Portable.zip` for the portable Windows edition. CI builds the two native macOS architectures separately and rejects a package whose main executable architecture does not match its label. The Intel package has not been manually tested on physical Intel Mac hardware. In-app installer downloading is not implemented. macOS uses manual download and replacement because the project has no paid Apple Developer Program membership, Developer ID signing or Apple notarization. User data is kept separate from application files. Independent voice, realtime-audio and dictation usage is not included.

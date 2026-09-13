@@ -1,6 +1,6 @@
 # AI Subscription Usage
 
-**English** | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
+**English** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
 A local, no-account menu-bar / system-tray app that reads supported on-device usage logs from ChatGPT, Claude Code, Claude Desktop, Gemini CLI, Grok, and MiniMax, then compares 30 days of API-equivalent value against what you actually pay for each subscription. Kimi, GLM, and Alibaba Bailian can be detected but are not counted until their local formats are verified. Everything runs on your own machine — no AI API key, no account login, no OAuth/Auth Token/Cookie access, and no cloud service in the loop.
 
@@ -16,7 +16,7 @@ A local, no-account menu-bar / system-tray app that reads supported on-device us
 - USD/CNY subscription entry and report display, converted with dated ECB reference rates
 - Auto-discovery of local usage logs, with a safe, whitelisted way to point it at a non-default folder
 - OpenRouter-backed model prices refresh automatically about once a week; every change opens a new dated period so historical reports retain the rate valid on each usage day
-- Seven languages: English, Français, Deutsch, Español, 简体中文, 日本語, 한국어
+- Eight languages: English, Français, Deutsch, Español, 简体中文, 繁體中文, 日本語, 한국어
 - Launch at login, automatic daily refresh at 03:00, a 15-minute post-launch catch-up when needed, and one-click access to your local data folder
 - Opt-in, anonymized diagnostics only — never conversation content, file paths, or credentials
 
@@ -24,7 +24,8 @@ A local, no-account menu-bar / system-tray app that reads supported on-device us
 **Getting it**
 
 Download the latest build from the [Releases](../../releases) page:
-- **macOS**: `AI-Subscription-Usage-macOS.zip` — unzip it and move `AI Subscription Usage.app` to Applications.
+- **macOS Apple Silicon (M1 and newer)**: `AI-Subscription-Usage-macOS-Apple-Silicon.zip` — unzip it and move `AI Subscription Usage.app` to Applications.
+- **macOS Intel**: `AI-Subscription-Usage-macOS-Intel.zip` — unzip it and move `AI Subscription Usage.app` to Applications.
 - **Windows**: `AI-Subscription-Usage-Windows-Setup.exe` for a normal install (Start Menu shortcut, proper uninstall), or `AI-Subscription-Usage-Windows-Portable.zip` if you'd rather just unzip and run the .exe directly with nothing written to the registry or Program Files.
 
 Every release also ships a `SHA256SUMS.txt` to verify your download. The Windows build is compiled and self-tested in CI but hasn't been hands-tested on a physical Windows machine yet — see the table below.
@@ -140,7 +141,7 @@ The application serves its browser report on loopback only (`127.0.0.1:17653`). 
 
 The Windows installer uses Restart Manager to close the running application before replacing its executable; its post-install launch option starts the new version. macOS continues to use manual download and replacement. If another program or a legacy application occupies the address, startup reports the conflict without killing an unknown process or opening a second port. Packaged-app acceptance of this lifecycle and the Windows installer settings is still pending.
 
-Select **中文** or **English** in Settings. The choice is saved immediately and applied to Settings, the cached report, the configuration guide and the tray menu. Existing report tabs load the new language through their state check. Switching language does not scan usage or refresh prices, and does not change subscription amounts, currencies, provider identifiers or model IDs. Before the first report exists, the saved choice applies when that report is generated.
+Select any of the eight languages in Settings, including **简体中文**, **繁體中文**, and **English**. The choice is saved immediately and applied to Settings, the cached report, the configuration guide and the tray menu. Existing report tabs load the new language through their state check. Switching language does not scan usage or refresh prices, and does not change subscription amounts, currencies, provider identifiers or model IDs. Before the first report exists, the saved choice applies when that report is generated.
 
 The English report includes currency controls, exchange-rate dates, subscription-save errors, Auto estimates and unpriced-model notices. Alibaba Bailian uses an English display label while retaining its internal subscription key. Daily value-multiple tooltips distinguish missing usage records from unpriced models and mark partially priced totals as “priced portion only”.
 

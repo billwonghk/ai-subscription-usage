@@ -1,6 +1,6 @@
 # AI Subscription Usage
 
-[English](README.md) | [简体中文](README.zh-CN.md) | **日本語** | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | **日本語** | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
 ChatGPT、Claude Code、Claude Desktop、Gemini CLI、Grok、MiniMax の対応済みローカル使用ログを読み取り、直近30日間の API 換算価値と実際に支払っているサブスクリプション費用を比較する、アカウント登録不要のメニューバー / システムトレイアプリです。Kimi、GLM、Alibaba Bailian はインストールと記録を検出できますが、形式が検証されるまで使用量には含めません。すべての処理は自分のマシン上で完結します — AI API キー不要、アカウントログイン不要、OAuth/Auth Token/Cookie へのアクセスもなく、クラウドサービスも介在しません。
 
@@ -17,7 +17,7 @@ ChatGPT、Claude Code、Claude Desktop、Gemini CLI、Grok、MiniMax の対応�
 - MiniMax のローカルトークン計量表に対応。Kimi、GLM、Alibaba Bailian は形式検証まで検出のみ
 - ローカル使用ログの自動検出、非デフォルトフォルダを指定する安全なホワイトリスト方式にも対応
 - 対応モデルの価格は [OpenRouter](https://openrouter.ai/) の公開 API 価格データから約1週間に1回自動更新——手動編集不要
-- 7言語対応：English, Français, Deutsch, Español, 简体中文, 日本語, 한국어
+- 8言語対応：English, Français, Deutsch, Español, 简体中文, 繁體中文, 日本語, 한국어
 - ログイン時自動起動、毎日午前3時の自動更新、当日未更新の場合は起動15分後の補完更新、ローカルデータフォルダへのワンクリックアクセス
 - オプトイン方式の匿名診断のみ——会話内容、ファイルパス、認証情報は一切含まれません
 
@@ -25,7 +25,8 @@ ChatGPT、Claude Code、Claude Desktop、Gemini CLI、Grok、MiniMax の対応�
 **入手方法**
 
 [Releases](../../releases) ページから最新版をダウンロードしてください：
-- **macOS**：`AI-Subscription-Usage-macOS.zip` — 解凍して `AI Subscription Usage.app` を Applications フォルダに移動します。
+- **macOS Apple Silicon（M1 以降）**：`AI-Subscription-Usage-macOS-Apple-Silicon.zip` — 解凍して `AI Subscription Usage.app` を Applications フォルダに移動します。
+- **macOS Intel**：`AI-Subscription-Usage-macOS-Intel.zip` — 解凍して `AI Subscription Usage.app` を Applications フォルダに移動します。
 - **Windows**：通常インストール（スタートメニューへの登録、正常なアンインストール）をご希望の場合は `AI-Subscription-Usage-Windows-Setup.exe`、レジストリや Program Files に何も書き込みたくない場合は解凍してそのまま実行できる `AI-Subscription-Usage-Windows-Portable.zip` をどうぞ。
 
 各リリースにはダウンロードの検証用に `SHA256SUMS.txt` も同梱されています。Windows ビルドは CI 上でコンパイル・自己テスト済みですが、実機の Windows での動作確認はまだ行われていません — 詳細は下の表をご覧ください。

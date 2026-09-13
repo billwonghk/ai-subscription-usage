@@ -118,11 +118,12 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(usage.total_tokens, 120)
 
     def test_dashboard_aggregates_all_providers_and_builds_provider_details(self):
+        today = report.report_today().isoformat()
         usages = [
-            report.Usage("Codex", "gpt-test", "2026-08-10", 100, 20, 40, True),
-            report.Usage("Claude Code", "claude-test", "2026-08-10", 50, 10, 5),
-            report.Usage("Gemini CLI", "gemini-test", "2026-08-10", 30, 5, 10, True),
-            report.Usage("Grok Build", "grok-test", "2026-08-10", 80, 0, 0, is_estimate=True),
+            report.Usage("Codex", "gpt-test", today, 100, 20, 40, True),
+            report.Usage("Claude Code", "claude-test", today, 50, 10, 5),
+            report.Usage("Gemini CLI", "gemini-test", today, 30, 5, 10, True),
+            report.Usage("Grok Build", "grok-test", today, 80, 0, 0, is_estimate=True),
         ]
         page = report.render_dashboard(
             usages,
@@ -264,7 +265,7 @@ class AdapterTests(unittest.TestCase):
         self.assertNotIn("<span class=\"provider-badge\">已添加</span>", available_page)
 
     def test_dashboard_includes_cache_hit_rate_and_deepseek_comparison(self):
-        usages = [report.Usage("Codex", "gpt-test", "2026-08-10", 100, 20, 60, True)]
+        usages = [report.Usage("Codex", "gpt-test", report.report_today().isoformat(), 100, 20, 60, True)]
         pricing = {"models": {"deepseek-v4-flash": {
             "input_per_million": 1, "cached_input_per_million": 0.1, "output_per_million": 5,
         }}, "subscriptions": {}}
@@ -280,7 +281,7 @@ class AdapterTests(unittest.TestCase):
         # Regression: a model can have a DeepSeek tier mapping while the local pricing
         # file is stale and lacks the deepseek-v4-* rate. That must show as unpriced
         # (null / dash in the UI), not silently as a real-looking $0.00.
-        usages = [report.Usage("Codex", "gpt-test", "2026-08-10", 100, 20, 60, True)]
+        usages = [report.Usage("Codex", "gpt-test", report.report_today().isoformat(), 100, 20, 60, True)]
         pricing = {"models": {}, "subscriptions": {}}
         page = report.render_dashboard(usages, 30, {"Codex": 1}, pricing, deepseek_tiers={"gpt-test": "flash"})
         self.assertIn('"deepseek_cost": null', page)
@@ -539,7 +540,7 @@ class AdapterTests(unittest.TestCase):
             validate_source({"provider": "chatgpt", "surface": "chatgpt-desktop", "format": "shell-script", "path": str(Path.home())})
 
     def test_help_page_is_localized_and_contains_safe_commands(self):
-        for language in ("zh-CN", "en", "ja", "ko", "fr", "de", "es"):
+        for language in ("zh-CN", "zh-TW", "en", "ja", "ko", "fr", "de", "es"):
             page = render_help(language)
             self.assertIn(f'lang="{language}"', page)
             self.assertIn("--doctor --json", page)
@@ -547,6 +548,7 @@ class AdapterTests(unittest.TestCase):
             self.assertNotIn("Auth Token</pre>", page)
             self.assertIn("development", page)
         self.assertIn("本机检测结果", render_help("zh-CN"))
+        self.assertIn("本機偵測結果", render_help("zh-TW"))
         self.assertIn('data-set="pricing"', render_help("zh-CN"))
         self.assertIn('data-set="mapping"', render_help("zh-CN"))
         self.assertIn("現在の検出結果", render_help("ja"))

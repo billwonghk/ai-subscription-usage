@@ -1,6 +1,6 @@
 # AI Subscription Usage
 
-[English](README.md) | **简体中文** | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
+[English](README.md) | **简体中文** | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
 一个本地运行、不用注册账号的菜单栏/系统托盘应用，读取本机 ChatGPT、Claude Code、Claude Desktop、Gemini CLI、Grok 和 MiniMax 已支持的用量记录，把最近 30 天的 API 等价价值和你实际付的订阅费做对比。Kimi、GLM 和阿里百炼目前只检测安装与记录文件，格式验证完成前不计入用量。所有计算都在你自己的电脑上完成——不需要 AI API Key，不需要账号登录，不读取 OAuth/Auth Token/Cookie，也不经过任何云端服务。
 
@@ -16,7 +16,7 @@
 - 支持用 USD 或 CNY 填写订阅金额和切换报表显示，按 ECB 每日参考汇率换算
 - 自动发现本机用量记录，也提供一个安全的、白名单式的方法指定非默认目录
 - OpenRouter 支持的模型价格大约每周自动更新；每次变价建立新的日期区间，历史报表继续使用用量当天有效的价格
-- 支持七种语言：简体中文、English、日本語、한국어、Français、Deutsch、Español
+- 支持八种语言：简体中文、繁體中文、English、日本語、한국어、Français、Deutsch、Español
 - 开机自启、每天凌晨 3:00 自动更新、当天漏更时启动 15 分钟后补更新、一键打开本机数据文件夹
 - 诊断信息默认关闭，需要手动开启才上传，且从不上传对话内容、文件路径或密钥
 
@@ -24,7 +24,8 @@
 **获取方式**
 
 去 [Releases](../../releases) 页面下载最新版本：
-- **macOS**：`AI-Subscription-Usage-macOS.zip`——解压后把 `AI Subscription Usage.app` 拖进"应用程序"文件夹。
+- **macOS Apple Silicon（M1 及后续芯片）**：`AI-Subscription-Usage-macOS-Apple-Silicon.zip`——解压后把 `AI Subscription Usage.app` 拖进“应用程序”文件夹。
+- **macOS Intel**：`AI-Subscription-Usage-macOS-Intel.zip`——解压后把 `AI Subscription Usage.app` 拖进“应用程序”文件夹。
 - **Windows**：`AI-Subscription-Usage-Windows-Setup.exe` 是正常安装包（开始菜单快捷方式、能正常卸载）；如果不想往系统里装东西，也可以下 `AI-Subscription-Usage-Windows-Portable.zip`，解压后直接双击里面的 exe 运行。
 
 每次发布都附带一个 `SHA256SUMS.txt`，可以用来校验下载文件没被篡改。Windows 版本在 CI 里编译并自测过，但还没有在真实 Windows 电脑上手动测试过，见下面表格。
@@ -120,7 +121,7 @@ python3 -m venv .venv-desktop
 
 ## 多语言
 
-桌面外壳包含简体中文、英语、日语、韩语、法语、德语和西班牙语资源，默认跟随操作系统语言，可从设置页切换。所有计算字段和价格数据库不因语言变化。
+桌面外壳包含简体中文、繁體中文、英语、日语、韩语、法语、德语和西班牙语资源，默认跟随操作系统语言，可从设置页切换。所有计算字段和价格数据库不因语言变化。
 
 ## 价格库更新
 
@@ -144,7 +145,7 @@ Windows 安装器使用系统 Restart Manager 在替换应用前关闭正在运�
 
 ### 界面语言
 
-在设置页点击“中文”或“English”，选择会立即保存，并切换设置页、已有报表、配置及使用说明和状态栏菜单。切换语言不扫描用量、不更新价格，也不修改订阅金额、币种、平台标识或模型标识。已打开的报表通过状态检查加载新语言。首次尚未生成报表时，语言选择先保存，后续生成报表使用该语言。
+在设置页选择八种语言中的任意一种，包括“简体中文”“繁體中文”和“English”。选择会立即保存，并切换设置页、已有报表、配置及使用说明和状态栏菜单。切换语言不扫描用量、不更新价格，也不修改订阅金额、币种、平台标识或模型标识。已打开的报表通过状态检查加载新语言。首次尚未生成报表时，语言选择先保存，后续生成报表使用该语言。
 
 英文界面包含货币切换、汇率日期、订阅保存失败、Auto 估算和未计价提示。技术模型 ID 保留原文；“阿里百炼”在英文界面显示为 Alibaba Bailian，内部订阅键不变。每日价值倍数图区分无用量记录与模型未计价；只计算部分 Token 时，悬停提示标注“仅已计价部分”。
 

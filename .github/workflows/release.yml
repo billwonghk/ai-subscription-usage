@@ -12,8 +12,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - run: python scripts/privacy_check.py
@@ -39,8 +39,8 @@ jobs:
             mac_asset: ""
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: Verify macOS runner architecture
@@ -156,7 +156,7 @@ jobs:
           New-Item -ItemType Directory -Force release-assets | Out-Null
           Compress-Archive -Path "dist\AI Subscription Usage.exe" -DestinationPath "release-assets\AI-Subscription-Usage-Windows-Portable.zip"
           Copy-Item "dist-installer\*.exe" release-assets
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ai-subscription-usage-${{ matrix.artifact }}
           path: release-assets/*
@@ -166,13 +166,13 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           path: release
           merge-multiple: true
       - run: sha256sum release/* > release/SHA256SUMS.txt
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           draft: true
           body_path: docs/release-v0.5.0.md

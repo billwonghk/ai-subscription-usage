@@ -10,8 +10,8 @@
     "Alibaba Token Plan qwen3.8-max": "https://help.aliyun.com/zh/model-studio/token-plan-personal-overview"
   },
   "schema_version": 2,
-  "price_version": "2026-09-28.openrouter",
-  "updated_at": "2026-09-28T00:00:00Z",
+  "price_version": "2026-10-05.openrouter",
+  "updated_at": "2026-10-05T00:00:00Z",
   "model_aliases": {
     "MiniMax-M3": "minimax/MiniMax-M3",
     "minimax-m3": "minimax/MiniMax-M3",
@@ -373,11 +373,18 @@
           "input_per_million": 0.14,
           "cached_input_per_million": 0.028,
           "output_per_million": 0.28,
-          "start_date": "2026-09-28"
+          "start_date": "2026-09-28",
+          "end_date": "2026-10-04"
+        },
+        {
+          "input_per_million": 0.03,
+          "cached_input_per_million": 0.03,
+          "output_per_million": 1.28,
+          "start_date": "2026-10-05"
         }
       ],
       "source": "openrouter",
-      "updated_at": "2026-09-28"
+      "updated_at": "2026-10-05"
     },
     "deepseek-v4-pro": {
       "periods": [
@@ -413,11 +420,18 @@
           "input_per_million": 0.95526,
           "cached_input_per_million": 0.079605,
           "output_per_million": 1.91052,
-          "start_date": "2026-09-21"
+          "start_date": "2026-09-21",
+          "end_date": "2026-10-04"
+        },
+        {
+          "input_per_million": 0.2088,
+          "cached_input_per_million": 0.0174,
+          "output_per_million": 0.4176,
+          "start_date": "2026-10-05"
         }
       ],
       "source": "openrouter",
-      "updated_at": "2026-09-21"
+      "updated_at": "2026-10-05"
     },
     "minimax/MiniMax-M3": {
       "input_per_million": 0.3,
@@ -427,11 +441,23 @@
       "updated_at": "2026-08-27"
     },
     "minimax/MiniMax-M2.7": {
-      "input_per_million": 0.3,
-      "cached_input_per_million": 0.06,
-      "output_per_million": 1.2,
+      "periods": [
+        {
+          "input_per_million": 0.3,
+          "cached_input_per_million": 0.06,
+          "output_per_million": 1.2,
+          "start_date": "2000-01-01",
+          "end_date": "2026-10-04"
+        },
+        {
+          "input_per_million": 0.21,
+          "cached_input_per_million": 0.042,
+          "output_per_million": 0.84,
+          "start_date": "2026-10-05"
+        }
+      ],
       "source": "openrouter",
-      "updated_at": "2026-08-27"
+      "updated_at": "2026-10-05"
     },
     "moonshotai/kimi-k3": {
       "periods": [
@@ -467,11 +493,18 @@
           "input_per_million": 3.0,
           "cached_input_per_million": 0.3,
           "output_per_million": 15.0,
-          "start_date": "2026-09-28"
+          "start_date": "2026-09-28",
+          "end_date": "2026-10-04"
+        },
+        {
+          "input_per_million": 0.67,
+          "cached_input_per_million": 0.22,
+          "output_per_million": 14.0,
+          "start_date": "2026-10-05"
         }
       ],
       "source": "openrouter",
-      "updated_at": "2026-09-28"
+      "updated_at": "2026-10-05"
     },
     "moonshotai/kimi-k2.7-code": {
       "periods": [
@@ -500,11 +533,18 @@
           "input_per_million": 0.6562,
           "cached_input_per_million": 0.18,
           "output_per_million": 3.3,
-          "start_date": "2026-09-28"
+          "start_date": "2026-09-28",
+          "end_date": "2026-10-04"
+        },
+        {
+          "input_per_million": 0.6712,
+          "cached_input_per_million": 0.18,
+          "output_per_million": 3.35,
+          "start_date": "2026-10-05"
         }
       ],
       "source": "openrouter",
-      "updated_at": "2026-09-28"
+      "updated_at": "2026-10-05"
     },
     "z-ai/glm-5.3": {
       "periods": [
@@ -540,11 +580,18 @@
           "input_per_million": 1.4,
           "cached_input_per_million": 0.26,
           "output_per_million": 4.4,
-          "start_date": "2026-09-28"
+          "start_date": "2026-09-28",
+          "end_date": "2026-10-04"
+        },
+        {
+          "input_per_million": 0.05,
+          "cached_input_per_million": 0.045,
+          "output_per_million": 7.0,
+          "start_date": "2026-10-05"
         }
       ],
       "source": "openrouter",
-      "updated_at": "2026-09-28"
+      "updated_at": "2026-10-05"
     },
     "z-ai/glm-5.2": {
       "periods": [
@@ -580,11 +627,18 @@
           "input_per_million": 0.6496,
           "cached_input_per_million": 0.12064,
           "output_per_million": 2.0416,
-          "start_date": "2026-09-21"
+          "start_date": "2026-09-21",
+          "end_date": "2026-10-04"
+        },
+        {
+          "input_per_million": 0.0192,
+          "cached_input_per_million": 0.0192,
+          "output_per_million": 16.0,
+          "start_date": "2026-10-05"
         }
       ],
       "source": "openrouter",
-      "updated_at": "2026-09-21"
+      "updated_at": "2026-10-05"
     },
     "z-ai/glm-5-turbo": {
       "input_per_million": 1.2,

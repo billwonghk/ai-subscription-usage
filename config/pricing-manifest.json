@@ -1,5 +1,5 @@
 {
-  "price_version": "2026-10-26.openrouter",
+  "price_version": "2026-11-02.openrouter",
   "pricing_url": "https://raw.githubusercontent.com/billwonghk/ai-subscription-usage/main/config/pricing.json",
-  "sha256": "6ca8f84dd093e544292b10092294fb1cfaaee33bcc20a3c79af08d4e94e7c349"
+  "sha256": "a881fd80115fa6a6798f6284a9987d44e4d7ff40eb91496e4dd5454117b63155"
 }
